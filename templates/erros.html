@@ -1,0 +1,267 @@
+{% extends "base.html" %}
+{% block title %}Erros / NC{% endblock %}
+{% block page_title %}Erros e Não Conformidades{% endblock %}
+
+{% block content %}
+
+<!-- Stat cards de erros -->
+<div class="stats-grid mb-24">
+  {% set tipo_info = [
+    ('erro_engenharia',  '🔧', 'Engenharia',  'red'),
+    ('erro_fabrica',     '🏭', 'Fábrica',     'yellow'),
+    ('erro_processo',    '⚙️',  'Processo',    'blue'),
+    ('pendencia_vendas', '💼', 'Pend. Vendas','purple'),
+  ] %}
+  {% for tipo, icon, nome, cor in tipo_info %}
+  <div class="stat-card">
+    <div class="stat-icon {{ cor }}">{{ icon }}</div>
+    <div>
+      <div class="stat-value {{ cor }}">{{ stats[tipo] }}</div>
+      <div class="stat-label">{{ nome }}</div>
+    </div>
+  </div>
+  {% endfor %}
+</div>
+
+<div style="display:grid;grid-template-columns:1fr 320px;gap:20px;align-items:start;">
+
+  <!-- Tabela de erros -->
+  <div class="card">
+    <div class="card-header">
+      <span class="card-title">🚨 Registro de Erros / NC</span>
+      <div style="display:flex;gap:8px;align-items:center;">
+        <input type="text" id="filtro-erros" placeholder="🔍 Filtrar…" style="width:160px;padding:5px 10px;font-size:.82rem;" />
+        <button class="btn btn-danger btn-sm no-print" onclick="openModal('modal-novo-erro')">➕ Registrar</button>
+      </div>
+    </div>
+
+    {% if erros %}
+    <div class="table-wrap">
+      <table id="tabela-erros">
+        <thead>
+          <tr>
+            <th>OS</th>
+            <th>Tipo</th>
+            <th>Descrição</th>
+            <th>Identificado</th>
+            <th>Ação</th>
+            <th>Status</th>
+            <th>Data</th>
+            <th></th>
+          </tr>
+        </thead>
+        <tbody>
+          {% for e in erros %}
+          <tr id="erro-row-{{ e.id }}">
+            <td>
+              {% if e.os_id %}
+              <a href="/os/{{ e.os_id }}" class="font-mono" style="color:var(--blue);">{{ e.os_numero }}</a>
+              {% else %}
+              <span class="text-muted">—</span>
+              {% endif %}
+            </td>
+            <td>
+              {% set cores_tipo = {'erro_engenharia':'red','erro_fabrica':'yellow','erro_processo':'blue','pendencia_vendas':'purple'} %}
+              <span class="badge badge-{{ cores_tipo[e.tipo] }}">{{ tipos_erro[e.tipo] }}</span>
+            </td>
+            <td style="max-width:200px;font-size:.82rem;">{{ e.descricao }}</td>
+            <td style="font-size:.78rem;color:var(--text-secondary);">{{ e.identificado_por }}</td>
+            <td style="max-width:160px;font-size:.78rem;color:var(--text-muted);">
+              {{ e.acao_corretiva or '—' }}
+            </td>
+            <td>
+              {% if e.status == 'aberto' %}
+              <span class="badge badge-red">🔴 Aberto</span>
+              {% else %}
+              <span class="badge badge-green">✅ Resolvido</span>
+              {% endif %}
+            </td>
+            <td style="font-size:.75rem;white-space:nowrap;color:var(--text-muted);">
+              {{ e.data_registro[:10] }}
+            </td>
+            <td>
+              {% if e.status == 'aberto' %}
+              <button class="btn btn-secondary btn-sm no-print"
+                      onclick="openResolve({{ e.id }})">Resolver</button>
+              {% endif %}
+            </td>
+          </tr>
+          {% endfor %}
+        </tbody>
+      </table>
+    </div>
+    {% else %}
+    <div class="card-body text-center" style="padding:48px;">
+      <div style="font-size:3rem;margin-bottom:12px;">✅</div>
+      <div style="color:var(--text-secondary);">Nenhum erro registrado</div>
+    </div>
+    {% endif %}
+  </div>
+
+  <!-- Gráfico lateral -->
+  <div>
+    <div class="card mb-24">
+      <div class="card-header"><span class="card-title">📊 Distribuição por Tipo</span></div>
+      <div class="card-body" style="display:flex;flex-direction:column;align-items:center;gap:12px;">
+        <canvas id="pizza-erros" width="200" height="200"></canvas>
+        <div style="width:100%;">
+          {% set cores = ['var(--red)','var(--yellow)','var(--blue)','var(--purple)'] %}
+          {% for tipo, icon, nome, cor in tipo_info %}
+          <div style="display:flex;align-items:center;justify-content:space-between;padding:4px 0;font-size:.8rem;">
+            <div style="display:flex;align-items:center;gap:6px;">
+              <span style="width:10px;height:10px;border-radius:50%;background:var(--{{ cor }});display:inline-block;"></span>
+              {{ nome }}
+            </div>
+            <strong>{{ stats[tipo] }}</strong>
+          </div>
+          {% endfor %}
+        </div>
+      </div>
+    </div>
+
+    <!-- Novo erro rápido -->
+    <div class="card">
+      <div class="card-header"><span class="card-title">⚡ Registro Rápido</span></div>
+      <div class="card-body">
+        <form method="POST" action="/erros/novo">
+          <div class="form-group">
+            <label>OS Relacionada</label>
+            <select name="os_id">
+              <option value="">Sem OS específica</option>
+              {% for o in oss_lista %}
+              <option value="{{ o.id }}">{{ o.numero }} – {{ o.cliente }}</option>
+              {% endfor %}
+            </select>
+          </div>
+          <div class="form-group">
+            <label>Tipo *</label>
+            <select name="tipo" required>
+              <option value="">Selecione…</option>
+              {% for k, v in tipos_erro.items() %}<option value="{{ k }}">{{ v }}</option>{% endfor %}
+            </select>
+          </div>
+          <div class="form-group">
+            <label>Identificado por *</label>
+            <select name="identificado_por" required>
+              <option value="">Selecione…</option>
+              {% for e in equipe %}<option value="{{ e }}">{{ e }}</option>{% endfor %}
+            </select>
+          </div>
+          <div class="form-group">
+            <label>Descrição *</label>
+            <textarea name="descricao" rows="3" required placeholder="Descreva o problema…"></textarea>
+          </div>
+          <div class="form-group">
+            <label>Ação Corretiva</label>
+            <textarea name="acao_corretiva" rows="2" placeholder="Ação tomada ou planejada…"></textarea>
+          </div>
+          <button type="submit" class="btn btn-danger btn-full">Registrar Erro</button>
+        </form>
+      </div>
+    </div>
+  </div>
+
+</div>
+
+<!-- Modal Registrar Erro ── (usado pelo botão no topo) -->
+<div class="modal-overlay" id="modal-novo-erro">
+  <div class="modal">
+    <div class="modal-header">
+      <span class="modal-title">🚨 Registrar Erro / NC</span>
+      <button class="modal-close" data-modal="modal-novo-erro">✕</button>
+    </div>
+    <form method="POST" action="/erros/novo">
+      <div class="modal-body">
+        <div class="form-group">
+          <label>OS Relacionada</label>
+          <select name="os_id">
+            <option value="">Sem OS específica</option>
+            {% for o in oss_lista %}<option value="{{ o.id }}">{{ o.numero }} – {{ o.cliente }}</option>{% endfor %}
+          </select>
+        </div>
+        <div class="form-group">
+          <label>Tipo *</label>
+          <select name="tipo" required>
+            <option value="">Selecione…</option>
+            {% for k, v in tipos_erro.items() %}<option value="{{ k }}">{{ v }}</option>{% endfor %}
+          </select>
+        </div>
+        <div class="form-group">
+          <label>Identificado por *</label>
+          <select name="identificado_por" required>
+            <option value="">Selecione…</option>
+            {% for e in equipe %}<option value="{{ e }}">{{ e }}</option>{% endfor %}
+          </select>
+        </div>
+        <div class="form-group">
+          <label>Descrição *</label>
+          <textarea name="descricao" rows="3" required></textarea>
+        </div>
+        <div class="form-group">
+          <label>Ação Corretiva</label>
+          <textarea name="acao_corretiva" rows="2"></textarea>
+        </div>
+      </div>
+      <div class="modal-footer">
+        <button type="button" class="btn btn-secondary" onclick="closeModal('modal-novo-erro')">Cancelar</button>
+        <button type="submit" class="btn btn-danger">Registrar</button>
+      </div>
+    </form>
+  </div>
+</div>
+
+<!-- Modal Resolver Erro -->
+<div class="modal-overlay" id="modal-resolver">
+  <div class="modal">
+    <div class="modal-header">
+      <span class="modal-title">✅ Resolver Erro / NC</span>
+      <button class="modal-close" data-modal="modal-resolver">✕</button>
+    </div>
+    <div class="modal-body">
+      <div class="form-group">
+        <label>Ação Corretiva *</label>
+        <textarea id="acao-resolver" rows="4" placeholder="Descreva a ação corretiva tomada…"></textarea>
+      </div>
+    </div>
+    <div class="modal-footer">
+      <button type="button" class="btn btn-secondary" onclick="closeModal('modal-resolver')">Cancelar</button>
+      <button type="button" class="btn btn-success" id="btn-confirmar-resolver">✅ Confirmar Resolução</button>
+    </div>
+  </div>
+</div>
+
+{% endblock %}
+
+{% block scripts %}
+<script>
+  initTableFilter('filtro-erros', 'tabela-erros');
+
+  // Gráfico donut
+  const statsData = [{{ stats.erro_engenharia }}, {{ stats.erro_fabrica }}, {{ stats.erro_processo }}, {{ stats.pendencia_vendas }}];
+  const colors    = ['#f85149', '#d29922', '#58a6ff', '#bc8cff'];
+  drawPieChart('pizza-erros', statsData, colors);
+
+  // Modal resolver
+  let currentErroId = null;
+  function openResolve(id) {
+    currentErroId = id;
+    document.getElementById('acao-resolver').value = '';
+    openModal('modal-resolver');
+  }
+  document.getElementById('btn-confirmar-resolver').addEventListener('click', function() {
+    const acao = document.getElementById('acao-resolver').value.trim();
+    if (!acao) { showToast('Informe a ação corretiva.', 'warning'); return; }
+    fetch(`/erros/${currentErroId}/resolver`, {
+      method: 'POST',
+      headers: {'Content-Type':'application/json'},
+      body: JSON.stringify({acao})
+    }).then(r => r.json()).then(d => {
+      if (d.success) {
+        showToast('Erro marcado como resolvido!', 'success');
+        closeModal('modal-resolver');
+        setTimeout(() => location.reload(), 1000);
+      }
+    });
+  });
+</script>
+{% endblock %}

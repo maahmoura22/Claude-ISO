@@ -1,0 +1,84 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>{% block title %}Engenharia ISO{% endblock %} – Metalúrgica</title>
+  <link rel="stylesheet" href="{{ url_for('static', filename='css/style.css') }}" />
+  <link rel="icon" href="data:image/svg+xml,<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 32 32'><text y='26' font-size='28'>⚙️</text></svg>" />
+</head>
+<body>
+<div class="wrapper">
+
+  <!-- ── Sidebar ── -->
+  <nav class="sidebar" id="sidebar">
+    <div class="sidebar-brand">
+      <a href="/" class="logo">
+        <div class="logo-icon">⚙️</div>
+        <div>
+          <span>ISO Engenharia</span>
+          <span class="logo-sub">Gestão de OS</span>
+        </div>
+      </a>
+    </div>
+
+    <div class="nav-section-label">Principal</div>
+    <a href="/"            class="nav-link"><span class="nav-icon">🏠</span> Dashboard</a>
+    <a href="/kanban"      class="nav-link"><span class="nav-icon">📌</span> Kanban</a>
+
+    <div class="nav-section-label">Ordens de Serviço</div>
+    <a href="/os/nova"     class="nav-link"><span class="nav-icon">➕</span> Nova OS</a>
+
+    <div class="nav-section-label">Qualidade</div>
+    <a href="/erros"       class="nav-link"><span class="nav-icon">🚨</span> Erros / NC</a>
+
+    <div class="nav-section-label">Relatórios</div>
+    <a href="/produtividade" class="nav-link"><span class="nav-icon">📊</span> Produtividade</a>
+    <a href="/relatorio"     class="nav-link"><span class="nav-icon">📄</span> Relatório Mensal</a>
+
+    <div class="sidebar-footer">
+      <div>Sistema v1.0</div>
+      <div>Setor Engenharia</div>
+    </div>
+  </nav>
+
+  <!-- ── Main ── -->
+  <div class="main">
+    <header class="topbar">
+      <div style="display:flex;align-items:center;gap:12px;">
+        <button class="hamburger" id="hamburger" aria-label="Menu">☰</button>
+        <span class="topbar-title">{% block page_title %}{% endblock %}</span>
+      </div>
+      <div class="topbar-right">
+        <span style="font-size:.78rem;color:var(--text-secondary);" id="clock"></span>
+        <a href="/os/nova" class="btn btn-primary btn-sm no-print">
+          <span>➕</span> Nova OS
+        </a>
+      </div>
+    </header>
+
+    <main class="content">
+      {% block content %}{% endblock %}
+    </main>
+  </div>
+
+</div>
+
+<!-- Toast container -->
+<div id="toast-container"></div>
+
+<script src="{{ url_for('static', filename='js/app.js') }}"></script>
+<script>
+  // Relógio
+  function updateClock() {
+    const el = document.getElementById('clock');
+    if (!el) return;
+    const now = new Date();
+    el.textContent = now.toLocaleString('pt-BR', { weekday: 'short', day: '2-digit', month: '2-digit', hour: '2-digit', minute: '2-digit' });
+  }
+  updateClock();
+  setInterval(updateClock, 60000);
+</script>
+{% block scripts %}{% endblock %}
+</body>
+</html>

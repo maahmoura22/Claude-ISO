@@ -1,0 +1,146 @@
+{% extends "base.html" %}
+{% block title %}Dashboard{% endblock %}
+{% block page_title %}Dashboard – Visão Geral{% endblock %}
+
+{% block content %}
+
+<!-- ── Stat cards ── -->
+<div class="stats-grid">
+  <div class="stat-card">
+    <div class="stat-icon blue">📋</div>
+    <div>
+      <div class="stat-value blue">{{ stats.ativas }}</div>
+      <div class="stat-label">OS em Andamento</div>
+    </div>
+  </div>
+  <div class="stat-card">
+    <div class="stat-icon red">⏰</div>
+    <div>
+      <div class="stat-value red">{{ stats.atrasadas }}</div>
+      <div class="stat-label">Atrasadas</div>
+    </div>
+  </div>
+  <div class="stat-card">
+    <div class="stat-icon green">✅</div>
+    <div>
+      <div class="stat-value green">{{ stats.concluidas_mes }}</div>
+      <div class="stat-label">Concluídas no Mês</div>
+    </div>
+  </div>
+  <div class="stat-card">
+    <div class="stat-icon yellow">🚨</div>
+    <div>
+      <div class="stat-value yellow">{{ stats.erros_abertos }}</div>
+      <div class="stat-label">Erros Abertos</div>
+    </div>
+  </div>
+</div>
+
+<!-- ── Pipeline resumo ── -->
+<div class="card mb-24">
+  <div class="card-header">
+    <span class="card-title">📌 Pipeline de Status</span>
+  </div>
+  <div class="card-body" style="padding:12px 18px;">
+    <div class="pipeline">
+      {% for key, label, icon in STATUS_PIPELINE %}
+      <div class="pipeline-step {% if por_status[key] > 0 %}active{% endif %}">
+        {{ icon }} {{ label }}
+        {% if por_status[key] > 0 %}
+        <span class="badge badge-blue" style="margin-left:4px;">{{ por_status[key] }}</span>
+        {% endif %}
+      </div>
+      {% endfor %}
+    </div>
+  </div>
+</div>
+
+<!-- ── Tabela de OS ── -->
+<div class="card">
+  <div class="card-header">
+    <span class="card-title">📋 Ordens de Serviço Ativas</span>
+    <div style="display:flex;gap:8px;align-items:center;">
+      <input type="text" id="filtro-os" placeholder="🔍 Filtrar…" style="width:180px;padding:5px 10px;font-size:.82rem;" />
+      <a href="/os/nova" class="btn btn-primary btn-sm no-print">➕ Nova OS</a>
+    </div>
+  </div>
+
+  {% if oss %}
+  <div class="table-wrap">
+    <table id="tabela-os">
+      <thead>
+        <tr>
+          <th>Nº OS</th>
+          <th>Cliente</th>
+          <th>Peça</th>
+          <th>Complexidade</th>
+          <th>Responsável</th>
+          <th>Status</th>
+          <th>Prazo</th>
+          <th>Dias Rest.</th>
+          <th>Checklist</th>
+          <th></th>
+        </tr>
+      </thead>
+      <tbody>
+        {% for os in oss %}
+        {% set dias = os.dias_rest %}
+        {% set cls  = alerta_class(dias) %}
+        <tr>
+          <td><span class="font-mono font-bold" style="color:var(--blue);">{{ os.numero }}</span></td>
+          <td>{{ os.cliente }}</td>
+          <td style="max-width:160px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;" title="{{ os.descricao_peca }}">{{ os.descricao_peca }}</td>
+          <td>
+            {% set cx = COMPLEXIDADE[os.complexidade] %}
+            <span class="complexidade-dot">{{ cx[1] }} {{ cx[0] }}</span>
+          </td>
+          <td>{{ os.responsavel_desenhista }}</td>
+          <td>
+            {% set sl = STATUS_DICT[os.status] %}
+            <span class="badge badge-blue">{{ sl[1] }} {{ sl[0] }}</span>
+          </td>
+          <td style="white-space:nowrap;">{{ fmt_data(os.prazo) }}</td>
+          <td>
+            <span class="dias-badge {{ cls }}">
+              {% if dias < 0 %}
+                🔴 {{ dias | abs }} atr.
+              {% elif dias == 0 %}
+                🔴 Hoje
+              {% else %}
+                {% if cls == 'warning' %}⚠️{% elif cls == 'success' %}✅{% endif %} {{ dias }}d
+              {% endif %}
+            </span>
+          </td>
+          <td>
+            {% if os.checklist_ok %}
+              <span class="badge badge-green">✔ OK</span>
+            {% elif os.status == 'desenho_andamento' %}
+              <span class="badge badge-yellow">⚠ Pendente</span>
+            {% else %}
+              <span class="badge badge-muted">–</span>
+            {% endif %}
+          </td>
+          <td>
+            <a href="/os/{{ os.id }}" class="btn btn-ghost btn-sm">Ver →</a>
+          </td>
+        </tr>
+        {% endfor %}
+      </tbody>
+    </table>
+  </div>
+  {% else %}
+  <div class="card-body text-center" style="padding:48px;">
+    <div style="font-size:3rem;margin-bottom:12px;">📭</div>
+    <div style="color:var(--text-secondary);">Nenhuma OS em andamento</div>
+    <a href="/os/nova" class="btn btn-primary mt-16">Criar primeira OS</a>
+  </div>
+  {% endif %}
+</div>
+
+{% endblock %}
+
+{% block scripts %}
+<script>
+  initTableFilter('filtro-os', 'tabela-os');
+</script>
+{% endblock %}

@@ -1,0 +1,269 @@
+{% extends "base.html" %}
+{% block title %}Relatório {{ mes }}{% endblock %}
+{% block page_title %}Relatório Mensal – {{ mes }}{% endblock %}
+
+{% block content %}
+
+<!-- Controles ── não impressos -->
+<div class="no-print" style="display:flex;align-items:center;justify-content:space-between;flex-wrap:wrap;gap:12px;margin-bottom:24px;">
+  <form method="GET" action="/relatorio" style="display:flex;gap:8px;align-items:center;">
+    <label style="text-transform:none;font-size:.85rem;color:var(--text-secondary);margin:0;">Mês:</label>
+    <input type="month" name="mes" value="{{ mes }}" style="width:160px;" />
+    <button type="submit" class="btn btn-primary btn-sm">Gerar</button>
+  </form>
+  <button class="btn btn-secondary btn-sm" onclick="window.print()">🖨️ Imprimir / Exportar PDF</button>
+</div>
+
+<!-- Cabeçalho do relatório -->
+<div class="card mb-24" style="border-top:3px solid var(--blue);">
+  <div class="card-body">
+    <div style="display:flex;justify-content:space-between;flex-wrap:wrap;gap:16px;">
+      <div>
+        <div style="font-size:1.3rem;font-weight:700;color:var(--text-primary);">
+          ⚙️ Relatório de Engenharia — Metalúrgica ISO
+        </div>
+        <div style="color:var(--text-secondary);margin-top:4px;font-size:.88rem;">
+          Período de referência: <strong>{{ mes }}</strong>
+        </div>
+        <div style="color:var(--text-muted);font-size:.78rem;margin-top:2px;">
+          Gerado em {{ now().strftime('%d/%m/%Y às %H:%M') }}
+        </div>
+      </div>
+      <div style="display:grid;grid-template-columns:1fr 1fr;gap:12px;min-width:260px;">
+        <div style="text-align:center;background:var(--green-bg);border-radius:8px;padding:12px;">
+          <div style="font-size:1.8rem;font-weight:700;color:var(--green);">{{ entregues|length }}</div>
+          <div style="font-size:.72rem;color:var(--text-secondary);">OS Entregues</div>
+        </div>
+        <div style="text-align:center;background:var(--red-bg);border-radius:8px;padding:12px;">
+          <div style="font-size:1.8rem;font-weight:700;color:var(--red);">{{ atrasadas|length }}</div>
+          <div style="font-size:.72rem;color:var(--text-secondary);">Atrasadas Hoje</div>
+        </div>
+        <div style="text-align:center;background:var(--yellow-bg);border-radius:8px;padding:12px;">
+          <div style="font-size:1.8rem;font-weight:700;color:var(--yellow);">{{ erros_mes|length }}</div>
+          <div style="font-size:.72rem;color:var(--text-secondary);">Erros no Mês</div>
+        </div>
+        <div style="text-align:center;background:var(--blue-bg);border-radius:8px;padding:12px;">
+          {% set total_prod = namespace(v=0) %}
+          {% for p in prod %}{% set total_prod.v = total_prod.v + p.concluidas %}{% endfor %}
+          <div style="font-size:1.8rem;font-weight:700;color:var(--blue);">{{ total_prod.v }}</div>
+          <div style="font-size:.72rem;color:var(--text-secondary);">Total Concluídas</div>
+        </div>
+      </div>
+    </div>
+  </div>
+</div>
+
+<!-- 1. OS Entregues ── -->
+<div class="card mb-24">
+  <div class="card-header">
+    <span class="card-title">✅ OS Entregues no Mês</span>
+    <span class="badge badge-green">{{ entregues|length }}</span>
+  </div>
+  {% if entregues %}
+  <div class="table-wrap">
+    <table>
+      <thead>
+        <tr>
+          <th>Nº OS</th>
+          <th>Cliente</th>
+          <th>Peça</th>
+          <th>Responsável</th>
+          <th>Complexidade</th>
+          <th>Prazo</th>
+          <th>Conclusão</th>
+          <th>Situação</th>
+        </tr>
+      </thead>
+      <tbody>
+        {% for o in entregues %}
+        {% set cx = COMPLEXIDADE[o.complexidade] %}
+        <tr>
+          <td class="font-mono" style="color:var(--blue);">{{ o.numero }}</td>
+          <td>{{ o.cliente }}</td>
+          <td>{{ o.descricao_peca }}</td>
+          <td>{{ o.responsavel_desenhista }}</td>
+          <td>{{ cx[1] }} {{ cx[0] }}</td>
+          <td>{{ fmt_data(o.prazo) }}</td>
+          <td>{{ fmt_data(o.data_conclusao) }}</td>
+          <td>
+            {% if o.data_conclusao and o.data_conclusao <= o.prazo %}
+              <span class="badge badge-green">No prazo</span>
+            {% else %}
+              <span class="badge badge-red">Atrasada</span>
+            {% endif %}
+          </td>
+        </tr>
+        {% endfor %}
+      </tbody>
+    </table>
+  </div>
+  {% else %}
+  <div class="card-body text-muted">Nenhuma OS concluída neste período.</div>
+  {% endif %}
+</div>
+
+<!-- 2. Atrasadas ── -->
+{% if atrasadas %}
+<div class="card mb-24">
+  <div class="card-header">
+    <span class="card-title">⏰ OS em Atraso (Atual)</span>
+    <span class="badge badge-red">{{ atrasadas|length }}</span>
+  </div>
+  <div class="table-wrap">
+    <table>
+      <thead>
+        <tr>
+          <th>Nº OS</th>
+          <th>Cliente</th>
+          <th>Peça</th>
+          <th>Responsável</th>
+          <th>Status</th>
+          <th>Prazo</th>
+          <th>Atraso</th>
+        </tr>
+      </thead>
+      <tbody>
+        {% for o in atrasadas %}
+        {% set atr = dias_restantes(o.prazo) | abs %}
+        {% set sl  = STATUS_DICT[o.status] %}
+        <tr>
+          <td class="font-mono" style="color:var(--red);">{{ o.numero }}</td>
+          <td>{{ o.cliente }}</td>
+          <td>{{ o.descricao_peca }}</td>
+          <td>{{ o.responsavel_desenhista }}</td>
+          <td><span class="badge badge-blue" style="font-size:.7rem;">{{ sl[1] }} {{ sl[0] }}</span></td>
+          <td>{{ fmt_data(o.prazo) }}</td>
+          <td><span class="badge badge-red">{{ atr }} dias</span></td>
+        </tr>
+        {% endfor %}
+      </tbody>
+    </table>
+  </div>
+</div>
+{% endif %}
+
+<!-- 3. Erros por categoria ── -->
+<div class="card mb-24">
+  <div class="card-header">
+    <span class="card-title">🚨 Erros por Categoria – {{ mes }}</span>
+    <span class="badge badge-red">Total: {{ erros_mes|length }}</span>
+  </div>
+  <div style="display:grid;grid-template-columns:repeat(auto-fill,minmax(200px,1fr));gap:1px;background:var(--border);">
+    {% set cat_info = [
+      ('erro_engenharia','🔧','Erro de Engenharia','red'),
+      ('erro_fabrica','🏭','Erro de Fábrica','yellow'),
+      ('erro_processo','⚙️','Erro de Processo','blue'),
+      ('pendencia_vendas','💼','Pendência Vendas','purple'),
+    ] %}
+    {% for tipo, icon, nome, cor in cat_info %}
+    <div style="padding:20px;background:var(--bg-card);">
+      <div style="font-size:1.6rem;font-weight:700;color:var(--{{ cor }});">{{ erros_cat[tipo] }}</div>
+      <div style="font-size:.82rem;color:var(--text-secondary);margin-top:4px;">{{ icon }} {{ nome }}</div>
+      {% set total_e = erros_mes|length %}
+      {% if total_e > 0 %}
+      <div class="progress mt-8">
+        <div class="progress-bar {{ cor }}" style="width:{{ (erros_cat[tipo] / total_e * 100)|int }}%"></div>
+      </div>
+      <div style="font-size:.7rem;color:var(--text-muted);margin-top:3px;">
+        {{ (erros_cat[tipo] / total_e * 100)|round(1) }}% do total
+      </div>
+      {% endif %}
+    </div>
+    {% endfor %}
+  </div>
+
+  {% if erros_mes %}
+  <div class="table-wrap" style="margin-top:1px;">
+    <table>
+      <thead>
+        <tr>
+          <th>OS</th><th>Tipo</th><th>Descrição</th><th>Identificado</th><th>Ação</th><th>Status</th>
+        </tr>
+      </thead>
+      <tbody>
+        {% for e in erros_mes %}
+        {% set cores_tipo = {'erro_engenharia':'red','erro_fabrica':'yellow','erro_processo':'blue','pendencia_vendas':'purple'} %}
+        <tr>
+          <td class="font-mono font-sm">{{ e.os_numero or '—' }}</td>
+          <td><span class="badge badge-{{ cores_tipo[e.tipo] }}" style="font-size:.68rem;">{{ TIPOS_ERRO[e.tipo] }}</span></td>
+          <td style="font-size:.78rem;">{{ e.descricao }}</td>
+          <td style="font-size:.75rem;color:var(--text-secondary);">{{ e.identificado_por }}</td>
+          <td style="font-size:.75rem;color:var(--text-muted);">{{ e.acao_corretiva or '—' }}</td>
+          <td>
+            {% if e.status == 'aberto' %}<span class="badge badge-red font-sm">Aberto</span>
+            {% else %}<span class="badge badge-green font-sm">Resolvido</span>{% endif %}
+          </td>
+        </tr>
+        {% endfor %}
+      </tbody>
+    </table>
+  </div>
+  {% endif %}
+</div>
+
+<!-- 4. Produtividade por desenhista ── -->
+<div class="card">
+  <div class="card-header"><span class="card-title">📊 Produtividade por Desenhista – {{ mes }}</span></div>
+  <div class="table-wrap">
+    <table>
+      <thead>
+        <tr>
+          <th>Desenhista</th>
+          <th>OS Concluídas</th>
+          <th>Entregues com Atraso</th>
+          <th>Erros Registrados</th>
+          <th>Índice Qualidade</th>
+        </tr>
+      </thead>
+      <tbody>
+        {% for p in prod %}
+        <tr>
+          <td><strong>{{ p.desenhista }}</strong></td>
+          <td><span style="color:var(--green);font-weight:700;">{{ p.concluidas }}</span></td>
+          <td>
+            {% if p.atrasadas == 0 %}
+              <span class="badge badge-green">✔ 0</span>
+            {% else %}
+              <span class="badge badge-red">{{ p.atrasadas }}</span>
+            {% endif %}
+          </td>
+          <td>
+            {% if p.erros == 0 %}
+              <span class="badge badge-green">✔ 0</span>
+            {% elif p.erros <= 2 %}
+              <span class="badge badge-yellow">{{ p.erros }}</span>
+            {% else %}
+              <span class="badge badge-red">{{ p.erros }}</span>
+            {% endif %}
+          </td>
+          <td>
+            {% if p.concluidas == 0 %}
+              <span class="badge badge-muted">—</span>
+            {% else %}
+              {% set idx_q = ((p.concluidas - p.atrasadas - p.erros) / p.concluidas * 100) | round | int %}
+              {% set idx_q = [idx_q, 0] | max %}
+              <div style="display:flex;align-items:center;gap:6px;">
+                <div class="progress" style="flex:1;height:6px;">
+                  <div class="progress-bar {% if idx_q >= 80 %}green{% elif idx_q >= 60 %}yellow{% else %}red{% endif %}"
+                       style="width:{{ idx_q }}%"></div>
+                </div>
+                <span style="font-size:.78rem;min-width:36px;
+                  {% if idx_q >= 80 %}color:var(--green){% elif idx_q >= 60 %}color:var(--yellow){% else %}color:var(--red){% endif %}">
+                  {{ idx_q }}%
+                </span>
+              </div>
+            {% endif %}
+          </td>
+        </tr>
+        {% endfor %}
+      </tbody>
+    </table>
+  </div>
+</div>
+
+<!-- Rodapé do relatório -->
+<div style="margin-top:32px;padding:16px;border-top:1px solid var(--border);font-size:.75rem;color:var(--text-muted);text-align:center;">
+  Sistema de Gestão – Engenharia Metalúrgica ISO &nbsp;|&nbsp; Relatório gerado em {{ now().strftime('%d/%m/%Y às %H:%M') }}
+</div>
+
+{% endblock %}

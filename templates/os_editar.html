@@ -1,0 +1,62 @@
+{% extends "base.html" %}
+{% block title %}Editar OS {{ os.numero }}{% endblock %}
+{% block page_title %}Editar OS {{ os.numero }}{% endblock %}
+
+{% block content %}
+<div style="max-width:720px;">
+  <div class="card">
+    <div class="card-header">
+      <span class="card-title">✏️ Editar Ordem de Serviço</span>
+      <span class="badge badge-muted font-mono">{{ os.numero }}</span>
+    </div>
+    <div class="card-body">
+      <form method="POST" action="/os/{{ os.id }}/editar">
+
+        <div class="form-group">
+          <label>Cliente *</label>
+          <input type="text" name="cliente" value="{{ os.cliente }}" required />
+        </div>
+
+        <div class="form-group">
+          <label>Descrição da Peça *</label>
+          <input type="text" name="descricao_peca" value="{{ os.descricao_peca }}" required />
+        </div>
+
+        <div class="form-grid-3">
+          <div class="form-group">
+            <label>Complexidade *</label>
+            <select name="complexidade" required>
+              {% for key, (label, icon) in complexidade.items() %}
+              <option value="{{ key }}" {% if os.complexidade == key %}selected{% endif %}>{{ icon }} {{ label }}</option>
+              {% endfor %}
+            </select>
+          </div>
+          <div class="form-group">
+            <label>Responsável *</label>
+            <select name="responsavel_desenhista" required>
+              {% for d in desenhistas %}
+              <option value="{{ d }}" {% if os.responsavel_desenhista == d %}selected{% endif %}>{{ d }}</option>
+              {% endfor %}
+            </select>
+          </div>
+          <div class="form-group">
+            <label>Prazo *</label>
+            <input type="date" name="prazo" value="{{ os.prazo }}" required />
+          </div>
+        </div>
+
+        <div class="form-group">
+          <label>Observações</label>
+          <textarea name="observacoes" rows="3">{{ os.observacoes }}</textarea>
+        </div>
+
+        <hr />
+        <div style="display:flex;gap:10px;justify-content:flex-end;">
+          <a href="/os/{{ os.id }}" class="btn btn-secondary">Cancelar</a>
+          <button type="submit" class="btn btn-primary">💾 Salvar Alterações</button>
+        </div>
+      </form>
+    </div>
+  </div>
+</div>
+{% endblock %}

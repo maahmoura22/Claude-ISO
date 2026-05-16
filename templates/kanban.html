@@ -1,0 +1,69 @@
+{% extends "base.html" %}
+{% block title %}Kanban{% endblock %}
+{% block page_title %}Kanban – Fluxo de OS{% endblock %}
+
+{% block content %}
+
+<div style="margin-bottom:16px;display:flex;align-items:center;justify-content:space-between;flex-wrap:wrap;gap:8px;">
+  <div style="font-size:.85rem;color:var(--text-secondary);">
+    Arraste mentalmente as OSs entre colunas — clique para detalhes e para avançar status.
+  </div>
+  <a href="/os/nova" class="btn btn-primary btn-sm no-print">➕ Nova OS</a>
+</div>
+
+<div class="kanban-board">
+  {% for key, label, icon in STATUS_PIPELINE %}
+  {% set col_oss = dados[key] %}
+
+  <div class="kanban-col">
+    <div class="kanban-col-header">
+      <span class="kanban-col-title">{{ icon }} {{ label }}</span>
+      <span class="kanban-count">{{ col_oss | length }}</span>
+    </div>
+    <div class="kanban-cards">
+      {% if col_oss %}
+        {% for os in col_oss %}
+        {% set dias = os.dias_rest %}
+        {% set cls  = alerta_class(dias) %}
+        {% set cx   = COMPLEXIDADE[os.complexidade] %}
+
+        <a href="/os/{{ os.id }}" class="kanban-card">
+          <div style="display:flex;justify-content:space-between;align-items:center;">
+            <div class="kanban-card-number">{{ os.numero }}</div>
+            <span class="complexidade-dot" style="font-size:.75rem;">{{ cx[1] }}</span>
+          </div>
+          <div class="kanban-card-desc">{{ os.descricao_peca[:50] }}{% if os.descricao_peca|length > 50 %}…{% endif %}</div>
+          <div class="kanban-card-client">{{ os.cliente }}</div>
+          <div class="kanban-card-footer">
+            <span class="badge badge-muted" style="font-size:.68rem;">{{ os.responsavel_desenhista }}</span>
+            <span class="dias-badge {{ cls }}" style="font-size:.72rem;">
+              {% if dias < 0 %}🔴 {{ dias|abs }}d atr.
+              {% elif dias == 0 %}🔴 Hoje
+              {% else %}
+                {% if cls == 'warning' %}⚠️{% else %}{% endif %} {{ dias }}d
+              {% endif %}
+            </span>
+          </div>
+          {% if key == 'desenho_andamento' %}
+          <div style="margin-top:6px;">
+            {% if os.checklist_ok %}
+              <span class="badge badge-green" style="font-size:.66rem;">✔ Checklist OK</span>
+            {% else %}
+              <span class="badge badge-yellow" style="font-size:.66rem;">⚠ Checklist pendente</span>
+            {% endif %}
+          </div>
+          {% endif %}
+        </a>
+
+        {% endfor %}
+      {% else %}
+        <div style="padding:20px;text-align:center;color:var(--text-muted);font-size:.8rem;">
+          Nenhuma OS
+        </div>
+      {% endif %}
+    </div>
+  </div>
+  {% endfor %}
+</div>
+
+{% endblock %}

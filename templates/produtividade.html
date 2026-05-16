@@ -1,0 +1,160 @@
+{% extends "base.html" %}
+{% block title %}Produtividade{% endblock %}
+{% block page_title %}Painel de Produtividade{% endblock %}
+
+{% block content %}
+
+<!-- Seletor de mês -->
+<div style="display:flex;align-items:center;justify-content:space-between;flex-wrap:wrap;gap:12px;margin-bottom:24px;">
+  <div style="font-size:.85rem;color:var(--text-secondary);">
+    Mês de referência: <strong style="color:var(--text-primary);">{{ mes }}</strong>
+  </div>
+  <form method="GET" action="/produtividade" style="display:flex;gap:8px;align-items:center;">
+    <label style="text-transform:none;font-size:.85rem;color:var(--text-secondary);margin:0;">Mês:</label>
+    <input type="month" name="mes" value="{{ mes }}" style="width:160px;" />
+    <button type="submit" class="btn btn-primary btn-sm">Filtrar</button>
+  </form>
+</div>
+
+<!-- Cards por desenhista -->
+<div style="display:grid;grid-template-columns:repeat(auto-fill,minmax(280px,1fr));gap:20px;margin-bottom:32px;">
+  {% for d in dados %}
+  <div class="prod-card">
+    <div class="prod-name">
+      <div class="prod-avatar">{{ d.desenhista[0] }}</div>
+      {{ d.desenhista }}
+    </div>
+
+    <div class="prod-stats">
+      <div class="prod-stat">
+        <div class="prod-stat-val text-green">{{ d.concluidas }}</div>
+        <div class="prod-stat-label">Concluídas no mês</div>
+      </div>
+      <div class="prod-stat">
+        <div class="prod-stat-val text-blue">{{ d.em_andamento }}</div>
+        <div class="prod-stat-label">Em andamento</div>
+      </div>
+      <div class="prod-stat">
+        <div class="prod-stat-val text-red">{{ d.erros }}</div>
+        <div class="prod-stat-label">Erros registrados</div>
+      </div>
+      <div class="prod-stat">
+        <div class="prod-stat-val {% if d.taxa_prazo >= 80 %}text-green{% elif d.taxa_prazo >= 60 %}text-yellow{% else %}text-red{% endif %}">
+          {{ d.taxa_prazo }}%
+        </div>
+        <div class="prod-stat-label">Prazo cumprido</div>
+      </div>
+    </div>
+
+    <!-- Barra de prazo -->
+    <div style="margin-bottom:8px;">
+      <div style="display:flex;justify-content:space-between;font-size:.72rem;color:var(--text-muted);margin-bottom:4px;">
+        <span>Taxa de entrega no prazo</span>
+        <span>{{ d.taxa_prazo }}%</span>
+      </div>
+      <div class="progress">
+        <div class="progress-bar {% if d.taxa_prazo >= 80 %}green{% elif d.taxa_prazo >= 60 %}yellow{% else %}red{% endif %}"
+             style="width:{{ d.taxa_prazo }}%"></div>
+      </div>
+    </div>
+
+    <!-- Qualidade -->
+    <div style="font-size:.75rem;color:var(--text-muted);">
+      {% if d.erros == 0 %}
+        <span style="color:var(--green);">✅ Zero erros registrados</span>
+      {% elif d.erros == 1 %}
+        <span style="color:var(--yellow);">⚠️ 1 erro registrado</span>
+      {% else %}
+        <span style="color:var(--red);">🚨 {{ d.erros }} erros registrados</span>
+      {% endif %}
+    </div>
+  </div>
+  {% endfor %}
+</div>
+
+<!-- Tabela comparativa -->
+<div class="card">
+  <div class="card-header">
+    <span class="card-title">📊 Comparativo da Equipe – {{ mes }}</span>
+  </div>
+  <div class="table-wrap">
+    <table>
+      <thead>
+        <tr>
+          <th>Desenhista</th>
+          <th>OS Concluídas</th>
+          <th>Em Andamento</th>
+          <th>Erros</th>
+          <th>Taxa Prazo</th>
+          <th>Performance</th>
+        </tr>
+      </thead>
+      <tbody>
+        {% for d in dados %}
+        <tr>
+          <td>
+            <div style="display:flex;align-items:center;gap:8px;">
+              <div class="prod-avatar" style="width:28px;height:28px;font-size:.75rem;">{{ d.desenhista[0] }}</div>
+              {{ d.desenhista }}
+            </div>
+          </td>
+          <td><strong style="color:var(--green);">{{ d.concluidas }}</strong></td>
+          <td><span style="color:var(--blue);">{{ d.em_andamento }}</span></td>
+          <td>
+            {% if d.erros == 0 %}
+              <span class="badge badge-green">✔ 0</span>
+            {% elif d.erros <= 2 %}
+              <span class="badge badge-yellow">⚠ {{ d.erros }}</span>
+            {% else %}
+              <span class="badge badge-red">🚨 {{ d.erros }}</span>
+            {% endif %}
+          </td>
+          <td>
+            <div style="display:flex;align-items:center;gap:8px;min-width:120px;">
+              <div class="progress" style="flex:1;height:6px;">
+                <div class="progress-bar {% if d.taxa_prazo >= 80 %}green{% elif d.taxa_prazo >= 60 %}yellow{% else %}red{% endif %}"
+                     style="width:{{ d.taxa_prazo }}%"></div>
+              </div>
+              <span style="font-size:.78rem;min-width:32px;text-align:right;
+                {% if d.taxa_prazo >= 80 %}color:var(--green){% elif d.taxa_prazo >= 60 %}color:var(--yellow){% else %}color:var(--red){% endif %}">
+                {{ d.taxa_prazo }}%
+              </span>
+            </div>
+          </td>
+          <td>
+            {% if d.concluidas == 0 and d.em_andamento == 0 %}
+              <span class="badge badge-muted">Sem dados</span>
+            {% elif d.taxa_prazo >= 80 and d.erros == 0 %}
+              <span class="badge badge-green">⭐ Excelente</span>
+            {% elif d.taxa_prazo >= 70 and d.erros <= 1 %}
+              <span class="badge badge-blue">👍 Bom</span>
+            {% elif d.taxa_prazo >= 60 %}
+              <span class="badge badge-yellow">⚠ Regular</span>
+            {% else %}
+              <span class="badge badge-red">🚨 Atenção</span>
+            {% endif %}
+          </td>
+        </tr>
+        {% endfor %}
+      </tbody>
+    </table>
+  </div>
+</div>
+
+<!-- Gráfico de barras -->
+<div class="card mt-24">
+  <div class="card-header"><span class="card-title">📈 OS Concluídas por Desenhista</span></div>
+  <div class="card-body" style="display:flex;justify-content:center;padding:24px;">
+    <canvas id="bar-prod" width="600" height="220"></canvas>
+  </div>
+</div>
+
+{% endblock %}
+
+{% block scripts %}
+<script>
+  const labels = [{% for d in dados %}'{{ d.desenhista }}',{% endfor %}];
+  const values = [{% for d in dados %}{{ d.concluidas }},{% endfor %}];
+  drawBarChart('bar-prod', labels, values, '#58a6ff');
+</script>
+{% endblock %}

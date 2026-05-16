@@ -1,0 +1,270 @@
+{% extends "base.html" %}
+{% block title %}OS {{ os.numero }}{% endblock %}
+{% block page_title %}OS {{ os.numero }} – {{ os.cliente }}{% endblock %}
+
+{% block content %}
+{% set dias    = dias_restantes(os.prazo) %}
+{% set cls     = alerta_class(dias) %}
+{% set cx      = COMPLEXIDADE[os.complexidade] %}
+{% set sl      = STATUS_DICT[os.status] %}
+
+<!-- ── Cabeçalho ── -->
+<div style="display:flex;align-items:flex-start;justify-content:space-between;flex-wrap:wrap;gap:16px;margin-bottom:24px;">
+  <div>
+    <div style="display:flex;align-items:center;gap:10px;flex-wrap:wrap;">
+      <span style="font-size:1.4rem;font-weight:700;color:var(--blue);">{{ os.numero }}</span>
+      <span class="badge badge-blue" style="font-size:.82rem;">{{ sl[1] }} {{ sl[0] }}</span>
+      <span class="complexidade-dot">{{ cx[1] }} {{ cx[0] }}</span>
+    </div>
+    <div style="font-size:1rem;color:var(--text-secondary);margin-top:4px;">{{ os.cliente }} — {{ os.descricao_peca }}</div>
+    <div style="font-size:.8rem;color:var(--text-muted);margin-top:4px;">
+      Abertura: {{ fmt_data(os.data_abertura) }} &nbsp;|&nbsp;
+      Responsável: <strong style="color:var(--text-primary);">{{ os.responsavel_desenhista }}</strong>
+    </div>
+  </div>
+  <div style="display:flex;gap:8px;flex-wrap:wrap;align-items:center;">
+    <span class="dias-badge {{ cls }}">
+      {% if dias < 0 %}🔴 {{ dias|abs }} dias atrasado
+      {% elif dias == 0 %}🔴 Vence hoje
+      {% elif dias <= 3 %}⚠️ {{ dias }} dias
+      {% else %}✅ {{ dias }} dias restantes
+      {% endif %}
+    </span>
+    <a href="/os/{{ os.id }}/editar" class="btn btn-secondary btn-sm no-print">✏️ Editar</a>
+  </div>
+</div>
+
+<!-- ── Pipeline visual ── -->
+<div class="pipeline mb-24">
+  {% for key, label, icon in STATUS_PIPELINE %}
+  <div class="pipeline-step {% if loop.index0 < idx %}done{% elif loop.index0 == idx %}active{% endif %}">
+    {{ icon }} {{ label }}
+  </div>
+  {% endfor %}
+</div>
+
+<div style="display:grid;grid-template-columns:1fr 360px;gap:20px;align-items:start;">
+
+  <!-- ── Coluna esquerda ── -->
+  <div>
+
+    <!-- Checklist -->
+    {% if os.status == 'desenho_andamento' or (cl and cl.completo) %}
+    <div class="card mb-24">
+      <div class="card-header">
+        <span class="card-title">☑️ Checklist de Qualidade do Desenho</span>
+        <span id="checklist-pct" style="font-size:.85rem;font-weight:700;color:var(--green);">
+          {% if cl %}{{ [cl.cotas_montagem, cl.tolerancias_ajuste, cl.acabamento_superficial, cl.material_cabecalho, cl.dimensoes_conferidas, cl.chaveta_rosca_furo, cl.vista_corte, cl.escala_legivel] | select | list | length * 100 // 8 }}%{% else %}0%{% endif %}
+        </span>
+      </div>
+      <div style="padding:10px 18px 0;">
+        <div class="checklist-progress">
+          {% if cl %}
+          {% set checked_count = [cl.cotas_montagem, cl.tolerancias_ajuste, cl.acabamento_superficial, cl.material_cabecalho, cl.dimensoes_conferidas, cl.chaveta_rosca_furo, cl.vista_corte, cl.escala_legivel] | select | list | length %}
+          <div class="checklist-progress-bar" id="checklist-bar" style="width:{{ checked_count * 100 // 8 }}%"></div>
+          {% else %}
+          <div class="checklist-progress-bar" id="checklist-bar" style="width:0%"></div>
+          {% endif %}
+        </div>
+      </div>
+
+      <div style="padding:4px 10px 10px;">
+        {% for field, label in CHECKLIST_ITEMS %}
+        {% set checked = cl and cl[field] %}
+        <label class="checklist-item {% if checked %}checked{% endif %}" onclick="return false;">
+          <input type="checkbox" name="{{ field }}" {% if checked %}checked{% endif %}
+                 {% if os.status != 'desenho_andamento' %}disabled{% endif %} />
+          {{ label }}
+        </label>
+        {% endfor %}
+      </div>
+
+      {% if os.status == 'desenho_andamento' %}
+      <div style="padding:0 18px 16px;">
+        <div class="form-group" style="margin-bottom:0;">
+          <label for="preenchido_por">Preenchido por</label>
+          <select id="preenchido_por">
+            <option value="">Selecione…</option>
+            {% for e in equipe %}<option value="{{ e }}" {% if cl and cl.preenchido_por == e %}selected{% endif %}>{{ e }}</option>{% endfor %}
+          </select>
+        </div>
+        {% if cl and cl.preenchido_por and cl.data_preenchimento %}
+        <div style="font-size:.72rem;color:var(--text-muted);margin-top:6px;">
+          Último preenchimento: {{ cl.preenchido_por }} em {{ cl.data_preenchimento[:16] }}
+        </div>
+        {% endif %}
+      </div>
+      {% endif %}
+    </div>
+    {% endif %}
+
+    <!-- Observações -->
+    {% if os.observacoes %}
+    <div class="card mb-24">
+      <div class="card-header"><span class="card-title">📝 Observações</span></div>
+      <div class="card-body">{{ os.observacoes }}</div>
+    </div>
+    {% endif %}
+
+    <!-- Erros / NC desta OS -->
+    <div class="card">
+      <div class="card-header">
+        <span class="card-title">🚨 Erros / Não Conformidades</span>
+        <button class="btn btn-danger btn-sm no-print" onclick="openModal('modal-novo-erro')">+ Registrar</button>
+      </div>
+      {% if erros %}
+      <div class="table-wrap">
+        <table>
+          <thead><tr><th>Tipo</th><th>Descrição</th><th>Identificado</th><th>Status</th></tr></thead>
+          <tbody>
+            {% for e in erros %}
+            <tr>
+              <td><span class="badge badge-{% if e.status == 'aberto' %}red{% else %}muted{% endif %}">
+                {{ TIPOS_ERRO[e.tipo] }}</span></td>
+              <td style="font-size:.82rem;">{{ e.descricao }}</td>
+              <td style="font-size:.78rem;color:var(--text-secondary);">{{ e.identificado_por }}</td>
+              <td>
+                {% if e.status == 'aberto' %}
+                  <span class="badge badge-red">Aberto</span>
+                {% else %}
+                  <span class="badge badge-green">Resolvido</span>
+                {% endif %}
+              </td>
+            </tr>
+            {% endfor %}
+          </tbody>
+        </table>
+      </div>
+      {% else %}
+      <div class="card-body text-muted" style="font-size:.85rem;">Nenhum erro registrado nesta OS.</div>
+      {% endif %}
+    </div>
+
+  </div>
+
+  <!-- ── Coluna direita ── -->
+  <div>
+
+    <!-- Controle de Status -->
+    <div class="card mb-24">
+      <div class="card-header"><span class="card-title">🔄 Controle de Status</span></div>
+      <div class="card-body">
+        <div class="form-group">
+          <label for="usuario-select">Alterado por</label>
+          <select id="usuario-select">
+            {% for e in equipe %}<option value="{{ e }}" {% if e == 'Patrick' %}selected{% endif %}>{{ e }}</option>{% endfor %}
+          </select>
+        </div>
+        <div class="form-group" id="obs-group" style="margin-bottom:12px;">
+          <label for="obs-avancar">Observação (opcional)</label>
+          <input type="text" id="obs-avancar" placeholder="Comentário sobre a mudança…" />
+        </div>
+
+        {% if os.status != 'liberado_fabrica' %}
+        <button class="btn btn-success btn-full" id="btn-avancar"
+                onclick="avancarStatus({{ os.id }})"
+                {% if os.status == 'desenho_andamento' and (not cl or not cl.completo) %}disabled
+                title="Complete o checklist (100%) para avançar"{% endif %}>
+          ▶ Avançar Status
+        </button>
+        {% else %}
+        <div class="alert alert-success" style="margin:0;">🏭 Liberado para Fábrica em {{ fmt_data(os.data_conclusao) }}</div>
+        {% endif %}
+
+        {% if idx > 0 %}
+        <button class="btn btn-secondary btn-full mt-8 no-print" onclick="voltarStatus({{ os.id }})">
+          ◀ Retornar Status
+        </button>
+        {% endif %}
+
+        {% if os.status == 'desenho_andamento' and cl and not cl.completo %}
+        <div class="alert alert-warning mt-8" style="margin-bottom:0;">
+          ⚠️ Checklist incompleto — preencha todos os itens para avançar.
+        </div>
+        {% endif %}
+      </div>
+    </div>
+
+    <!-- Histórico -->
+    <div class="card">
+      <div class="card-header"><span class="card-title">📜 Histórico</span></div>
+      <div class="card-body">
+        {% if hist %}
+        <div class="timeline">
+          {% for h in hist %}
+          <div class="timeline-item">
+            <div class="timeline-dot {% if h.status_anterior %}done{% endif %}"></div>
+            <div class="timeline-content">
+              <div class="timeline-title">
+                {% set sl2 = STATUS_DICT[h.status_novo] %}
+                {{ sl2[1] }} → <strong>{{ sl2[0] }}</strong>
+              </div>
+              <div class="timeline-meta">
+                {{ h.alterado_por }} &nbsp;·&nbsp; {{ h.data_alteracao[:16] }}
+                {% if h.observacao %}<br/>{{ h.observacao }}{% endif %}
+              </div>
+            </div>
+          </div>
+          {% endfor %}
+        </div>
+        {% else %}
+        <div class="text-muted font-sm">Sem histórico.</div>
+        {% endif %}
+      </div>
+    </div>
+
+  </div>
+</div>
+
+<!-- ── Modal: Novo Erro ── -->
+<div class="modal-overlay" id="modal-novo-erro">
+  <div class="modal">
+    <div class="modal-header">
+      <span class="modal-title">🚨 Registrar Erro / NC</span>
+      <button class="modal-close" data-modal="modal-novo-erro">✕</button>
+    </div>
+    <form method="POST" action="/erros/novo">
+      <input type="hidden" name="os_id" value="{{ os.id }}" />
+      <div class="modal-body">
+        <div class="form-group">
+          <label>Tipo de Erro *</label>
+          <select name="tipo" required>
+            <option value="">Selecione…</option>
+            {% for k, v in tipos_erro.items() %}
+            <option value="{{ k }}">{{ v }}</option>
+            {% endfor %}
+          </select>
+        </div>
+        <div class="form-group">
+          <label>Identificado por *</label>
+          <select name="identificado_por" required>
+            <option value="">Selecione…</option>
+            {% for e in equipe %}<option value="{{ e }}">{{ e }}</option>{% endfor %}
+          </select>
+        </div>
+        <div class="form-group">
+          <label>Descrição *</label>
+          <textarea name="descricao" rows="3" required placeholder="Descreva o problema encontrado…"></textarea>
+        </div>
+        <div class="form-group">
+          <label>Ação Corretiva</label>
+          <textarea name="acao_corretiva" rows="2" placeholder="Ação já tomada ou planejada…"></textarea>
+        </div>
+      </div>
+      <div class="modal-footer">
+        <button type="button" class="btn btn-secondary" onclick="closeModal('modal-novo-erro')">Cancelar</button>
+        <button type="submit" class="btn btn-danger">Registrar Erro</button>
+      </div>
+    </form>
+  </div>
+</div>
+
+{% endblock %}
+
+{% block scripts %}
+<script>
+  {% if os.status == 'desenho_andamento' %}
+  initChecklist({{ os.id }});
+  {% endif %}
+</script>
+{% endblock %}
