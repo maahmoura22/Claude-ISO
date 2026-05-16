@@ -1,0 +1,180 @@
+{% extends 'base.html' %}
+{% block title %}Dashboard{% endblock %}
+
+{% block content %}
+<div class="page-header">
+  <div>
+    <h1><i class="bi bi-speedometer2 me-2 text-accent"></i>Dashboard</h1>
+    <small class="text-muted">Visão geral das Ordens de Serviço</small>
+  </div>
+  <a href="{{ url_for('nova_os') }}" class="btn btn-accent">
+    <i class="bi bi-plus-circle me-1"></i>Nova OS
+  </a>
+</div>
+
+<!-- Stats -->
+<div class="row g-3 mb-4">
+  <div class="col-6 col-md-4 col-xl-2">
+    <div class="stat-card">
+      <div class="stat-icon blue"><i class="bi bi-collection"></i></div>
+      <div>
+        <div class="stat-value">{{ stats.total }}</div>
+        <div class="stat-label">Total de OSs</div>
+      </div>
+    </div>
+  </div>
+  <div class="col-6 col-md-4 col-xl-2">
+    <div class="stat-card">
+      <div class="stat-icon yellow"><i class="bi bi-clock-history"></i></div>
+      <div>
+        <div class="stat-value">{{ stats.abertas }}</div>
+        <div class="stat-label">Em Aberto</div>
+      </div>
+    </div>
+  </div>
+  <div class="col-6 col-md-4 col-xl-2">
+    <div class="stat-card">
+      <div class="stat-icon green"><i class="bi bi-check2-all"></i></div>
+      <div>
+        <div class="stat-value">{{ stats.concluidas }}</div>
+        <div class="stat-label">Concluídas</div>
+      </div>
+    </div>
+  </div>
+  <div class="col-6 col-md-4 col-xl-2">
+    <div class="stat-card">
+      <div class="stat-icon yellow"><i class="bi bi-exclamation-circle"></i></div>
+      <div>
+        <div class="stat-value">{{ stats.criticas }}</div>
+        <div class="stat-label">Críticas (≤3 dias)</div>
+      </div>
+    </div>
+  </div>
+  <div class="col-6 col-md-4 col-xl-2">
+    <div class="stat-card">
+      <div class="stat-icon red"><i class="bi bi-alarm"></i></div>
+      <div>
+        <div class="stat-value">{{ stats.atrasadas }}</div>
+        <div class="stat-label">Atrasadas</div>
+      </div>
+    </div>
+  </div>
+  <div class="col-6 col-md-4 col-xl-2">
+    <div class="stat-card">
+      <div class="stat-icon red"><i class="bi bi-bug"></i></div>
+      <div>
+        <div class="stat-value">{{ erros_abertos }}</div>
+        <div class="stat-label">Erros Abertos</div>
+      </div>
+    </div>
+  </div>
+</div>
+
+<!-- Filtros rápidos -->
+<div class="d-flex gap-2 mb-3 flex-wrap">
+  <button class="btn btn-sm btn-outline-secondary active" onclick="filtrarOS('todos', this)">Todas</button>
+  <button class="btn btn-sm btn-outline-warning" onclick="filtrarOS('critica', this)">⚠ Críticas</button>
+  <button class="btn btn-sm btn-outline-danger"  onclick="filtrarOS('atrasada', this)">🔴 Atrasadas</button>
+  <button class="btn btn-sm btn-outline-success" onclick="filtrarOS('concluida', this)">✅ Concluídas</button>
+  <div class="ms-auto">
+    <input type="text" class="form-control form-control-sm" id="busca"
+           placeholder="🔍 Buscar OS, cliente..." oninput="buscarOS(this.value)"
+           style="width:220px">
+  </div>
+</div>
+
+<!-- Tabela de OSs -->
+<div class="card-eng p-0" style="overflow:hidden">
+  {% if ordens %}
+  <div style="overflow-x:auto">
+    <table class="os-table" id="tabelaOS">
+      <thead>
+        <tr>
+          <th>OS</th>
+          <th>Cliente</th>
+          <th>Peça</th>
+          <th>Responsável</th>
+          <th>Complexidade</th>
+          <th>Status</th>
+          <th>Prazo</th>
+          <th>Dias Rest.</th>
+          <th></th>
+        </tr>
+      </thead>
+      <tbody>
+        {% for os in ordens %}
+        <tr class="sit-{{ os.situacao }}" data-sit="{{ os.situacao }}"
+            data-busca="{{ os.numero }} {{ os.cliente }} {{ os.descricao_peca }}">
+          <td>
+            <a href="{{ url_for('os_detalhe', os_id=os.id) }}"
+               class="fw-bold" style="color:var(--text)">{{ os.numero }}</a>
+          </td>
+          <td>{{ os.cliente }}</td>
+          <td class="text-muted" style="max-width:200px; white-space:nowrap; overflow:hidden; text-overflow:ellipsis">
+            {{ os.descricao_peca }}
+          </td>
+          <td>{{ os.responsavel_desenhista }}</td>
+          <td>
+            {% if os.complexidade == 'simples' %}
+              <span class="badge-eng badge-ok">🟢 Simples</span>
+            {% elif os.complexidade == 'media' %}
+              <span class="badge-eng badge-warn">🟡 Média</span>
+            {% else %}
+              <span class="badge-eng badge-danger">🔴 Complexa</span>
+            {% endif %}
+          </td>
+          <td>
+            <span class="badge-eng badge-muted" style="white-space:nowrap">
+              {{ STATUS_LABELS[os.status] }}
+            </span>
+          </td>
+          <td>{{ os.prazo.strftime('%d/%m/%Y') }}</td>
+          <td>
+            {% set dr = os.dias_restantes %}
+            {% if os.status == 'liberado_fabrica' %}
+              <span class="text-muted">—</span>
+            {% elif dr < 0 %}
+              <span class="dias-danger"><i class="bi bi-alarm-fill"></i> {{ dr }}d</span>
+            {% elif dr <= 3 %}
+              <span class="dias-warn"><i class="bi bi-exclamation-circle"></i> {{ dr }}d</span>
+            {% else %}
+              <span class="dias-ok">{{ dr }}d</span>
+            {% endif %}
+          </td>
+          <td>
+            <a href="{{ url_for('os_detalhe', os_id=os.id) }}"
+               class="btn btn-sm btn-outline-accent">Ver</a>
+          </td>
+        </tr>
+        {% endfor %}
+      </tbody>
+    </table>
+  </div>
+  {% else %}
+  <div class="text-center py-5 text-muted">
+    <i class="bi bi-inbox" style="font-size:3rem; opacity:.3"></i>
+    <p class="mt-3">Nenhuma OS cadastrada ainda.</p>
+    <a href="{{ url_for('nova_os') }}" class="btn btn-accent mt-2">Cadastrar primeira OS</a>
+  </div>
+  {% endif %}
+</div>
+{% endblock %}
+
+{% block scripts %}
+<script>
+function filtrarOS(sit, btn) {
+  document.querySelectorAll('#tabelaOS tbody tr').forEach(tr => {
+    tr.style.display = (sit === 'todos' || tr.dataset.sit === sit) ? '' : 'none';
+  });
+  document.querySelectorAll('.d-flex button').forEach(b => b.classList.remove('active'));
+  btn.classList.add('active');
+}
+
+function buscarOS(q) {
+  q = q.toLowerCase();
+  document.querySelectorAll('#tabelaOS tbody tr').forEach(tr => {
+    tr.style.display = tr.dataset.busca.toLowerCase().includes(q) ? '' : 'none';
+  });
+}
+</script>
+{% endblock %}

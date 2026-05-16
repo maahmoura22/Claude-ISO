@@ -1,0 +1,125 @@
+{% extends 'base.html' %}
+{% block title %}Checklist OS {{ os.numero }}{% endblock %}
+
+{% block content %}
+<div class="page-header">
+  <div>
+    <h1><i class="bi bi-check2-square me-2 text-accent"></i>Checklist de Desenho</h1>
+    <small class="text-muted">OS {{ os.numero }} — {{ os.cliente }}</small>
+  </div>
+  <a href="{{ url_for('os_detalhe', os_id=os.id) }}" class="btn btn-outline-secondary btn-sm">
+    <i class="bi bi-arrow-left me-1"></i>Voltar
+  </a>
+</div>
+
+<div class="row justify-content-center">
+  <div class="col-lg-7">
+
+    <!-- Barra de progresso -->
+    <div class="card-eng mb-3">
+      <div class="d-flex justify-content-between align-items-center mb-2">
+        <span class="fw-bold">Progresso do Checklist</span>
+        <span id="contadorLabel" class="text-accent fw-bold">0/8</span>
+      </div>
+      <div class="checklist-progress" style="height:12px">
+        <div class="checklist-progress-bar" id="progressBar" style="width:0%"></div>
+      </div>
+      <div id="msgCompleto" class="text-center mt-2 d-none">
+        <span class="text-success fw-bold">
+          <i class="bi bi-check-circle-fill me-1"></i>
+          Checklist 100% completo! OS pode avançar para o Processista.
+        </span>
+      </div>
+    </div>
+
+    <div class="card-eng">
+      <p class="text-muted mb-4" style="font-size:.85rem">
+        <i class="bi bi-info-circle me-1"></i>
+        Todos os itens devem ser marcados antes que a OS possa avançar para o Processista.
+      </p>
+
+      <form method="POST" action="{{ url_for('checklist', os_id=os.id) }}" id="formChecklist">
+
+        {% set itens = [
+          ('cotas_montagem',      'bi-rulers',        'Todas as cotas de montagem presentes?',
+           'Verifique se todas as dimensões necessárias para montagem estão cotadas.'),
+          ('tolerancias_iso',     'bi-sliders',       'Tolerâncias de ajuste ISO indicadas (colos, alojamentos)?',
+           'Confirme tolerâncias nos colos de eixo e alojamentos de rolamento.'),
+          ('acabamento',          'bi-layers',        'Acabamento superficial indicado nas regiões críticas?',
+           'Verifique rugosidade (Ra) nas superfícies de contato e vedação.'),
+          ('material_cabecalho',  'bi-file-text',     'Material especificado no cabeçalho?',
+           'Confirme que o material está corretamente indicado no cabeçalho do desenho.'),
+          ('dimensoes_conferidas','bi-check2-circle', 'Dimensões conferidas contra amostra/medição?',
+           'Valide as dimensões principais contra a peça física ou relatório de medição.'),
+          ('chaveta_rosca_furo',  'bi-key',           'Chaveta, rosca e furo de centro cotados corretamente?',
+           'Verifique cotas e tolerâncias de chavetas, roscas e furos de centro.'),
+          ('vista_corte',         'bi-scissors',      'Vista de corte suficiente?',
+           'Confirme que as vistas em corte mostram todos os detalhes internos necessários.'),
+          ('escala_legivel',      'bi-zoom-in',       'Escala correta e legível?',
+           'Verifique se a escala está indicada e se o desenho está legível.'),
+        ] %}
+
+        {% for campo, icone, label, hint in itens %}
+        <label class="check-item {% if checklist and checklist[campo] %}checked{% endif %}"
+               id="item-{{ campo }}">
+          <input type="checkbox" name="{{ campo }}" id="{{ campo }}"
+                 {% if checklist and checklist[campo] %}checked{% endif %}
+                 onchange="atualizarProgresso()">
+          <div>
+            <div class="d-flex align-items-center gap-2">
+              <i class="bi {{ icone }} text-accent"></i>
+              <span class="fw-semibold" style="font-size:.9rem">{{ label }}</span>
+            </div>
+            <div class="text-muted" style="font-size:.78rem; margin-top:2px">{{ hint }}</div>
+          </div>
+        </label>
+        {% endfor %}
+
+        <hr class="my-4" style="border-color:var(--border)">
+
+        <div class="mb-4">
+          <label class="form-label">Preenchido por *</label>
+          <select name="preenchido_por" class="form-select" required>
+            <option value="">Selecione...</option>
+            {% for d in desenhistas %}
+            <option value="{{ d }}" {% if checklist and checklist.preenchido_por == d %}selected{% endif %}>
+              {{ d }}
+            </option>
+            {% endfor %}
+          </select>
+        </div>
+
+        <div class="d-flex gap-2">
+          <button type="submit" class="btn btn-accent px-4">
+            <i class="bi bi-save me-1"></i>Salvar Checklist
+          </button>
+          <a href="{{ url_for('os_detalhe', os_id=os.id) }}" class="btn btn-outline-secondary">Cancelar</a>
+        </div>
+      </form>
+    </div>
+  </div>
+</div>
+{% endblock %}
+
+{% block scripts %}
+<script>
+function atualizarProgresso() {
+  const checkboxes = document.querySelectorAll('#formChecklist input[type=checkbox]');
+  const total      = checkboxes.length;
+  const marcados   = [...checkboxes].filter(c => c.checked).length;
+  const pct        = Math.round(marcados / total * 100);
+
+  document.getElementById('progressBar').style.width = pct + '%';
+  document.getElementById('contadorLabel').textContent = marcados + '/' + total;
+
+  checkboxes.forEach(cb => {
+    const item = document.getElementById('item-' + cb.name);
+    if (item) item.classList.toggle('checked', cb.checked);
+  });
+
+  document.getElementById('msgCompleto').classList.toggle('d-none', marcados < total);
+}
+
+atualizarProgresso();
+</script>
+{% endblock %}

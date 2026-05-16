@@ -1,0 +1,131 @@
+{% extends 'base.html' %}
+{% block title %}Kanban{% endblock %}
+
+{% block content %}
+<div class="page-header">
+  <div>
+    <h1><i class="bi bi-kanban me-2 text-accent"></i>Quadro Kanban</h1>
+    <small class="text-muted">Arraste os cartões para mover as OSs entre etapas</small>
+  </div>
+  <div class="d-flex gap-2 align-items-center">
+    <select id="usuarioKanban" class="form-select form-select-sm" style="width:160px">
+      <option value="Patrick">Patrick</option>
+      <option value="Lucas">Lucas</option>
+      <option value="Breno">Breno</option>
+      <option value="Gustavo">Gustavo</option>
+      <option value="Wesley">Wesley</option>
+      <option value="Processista 1">Processista 1</option>
+      <option value="Processista 2">Processista 2</option>
+    </select>
+    <a href="{{ url_for('nova_os') }}" class="btn btn-accent btn-sm">
+      <i class="bi bi-plus-circle me-1"></i>Nova OS
+    </a>
+  </div>
+</div>
+
+<div id="alertaKanban" class="alert alert-danger d-none" role="alert"></div>
+
+<div class="kanban-board">
+  {% set col_colors = {
+    'desenho_andamento': '#00d4aa',
+    'com_processista':   '#f59e0b',
+    'revisao_desenho':   '#6366f1',
+    'revisao_processo':  '#f97316',
+    'liberado_fabrica':  '#22c55e',
+  } %}
+
+  {% for status_key, label in STATUS_LABELS.items() %}
+  <div class="kanban-col">
+    <div class="kanban-col-header">
+      <h6 style="color:{{ col_colors[status_key] }}">{{ label }}</h6>
+      <span class="badge rounded-pill" style="background:{{ col_colors[status_key] }}22; color:{{ col_colors[status_key] }}; border:1px solid {{ col_colors[status_key] }}44">
+        {{ colunas[status_key]|length }}
+      </span>
+    </div>
+    <div class="kanban-col-body sortable-list" data-status="{{ status_key }}">
+      {% for os in colunas[status_key] %}
+      <div class="kanban-card" data-os-id="{{ os.id }}" data-os-num="{{ os.numero }}">
+        <div class="d-flex justify-content-between align-items-start mb-1">
+          <a href="{{ url_for('os_detalhe', os_id=os.id) }}"
+             class="fw-bold" style="color:var(--text); font-size:.9rem">
+            {{ os.numero }}
+          </a>
+          {% if os.complexidade == 'simples' %}
+            <span style="font-size:.75rem">🟢</span>
+          {% elif os.complexidade == 'media' %}
+            <span style="font-size:.75rem">🟡</span>
+          {% else %}
+            <span style="font-size:.75rem">🔴</span>
+          {% endif %}
+        </div>
+        <div class="text-muted" style="font-size:.78rem; margin-bottom:4px">{{ os.cliente }}</div>
+        <div style="font-size:.8rem; color:var(--text); margin-bottom:6px; overflow:hidden; max-height:36px">
+          {{ os.descricao_peca[:50] }}{% if os.descricao_peca|length > 50 %}…{% endif %}
+        </div>
+        <div class="d-flex justify-content-between align-items-center">
+          <span style="font-size:.75rem; color:var(--text-muted)">
+            <i class="bi bi-person me-1"></i>{{ os.responsavel_desenhista }}
+          </span>
+          {% set dr = os.dias_restantes %}
+          {% if os.status == 'liberado_fabrica' %}
+            <span class="badge-eng badge-accent" style="font-size:.7rem">Concluída</span>
+          {% elif dr < 0 %}
+            <span class="badge-eng badge-danger" style="font-size:.7rem">{{ dr }}d</span>
+          {% elif dr <= 3 %}
+            <span class="badge-eng badge-warn" style="font-size:.7rem">{{ dr }}d</span>
+          {% else %}
+            <span class="badge-eng badge-ok" style="font-size:.7rem">{{ dr }}d</span>
+          {% endif %}
+        </div>
+        {% set ck = os.checklist_atual %}
+        {% if ck and not ck.completo %}
+        <div class="mt-1">
+          <div class="checklist-progress">
+            <div class="checklist-progress-bar" style="width:{{ (ck.itens_ok/8*100)|int }}%"></div>
+          </div>
+        </div>
+        {% endif %}
+      </div>
+      {% endfor %}
+    </div>
+  </div>
+  {% endfor %}
+</div>
+{% endblock %}
+
+{% block scripts %}
+<script>
+const usuario = () => document.getElementById('usuarioKanban').value;
+
+document.querySelectorAll('.sortable-list').forEach(col => {
+  new Sortable(col, {
+    group: 'kanban',
+    animation: 150,
+    ghostClass: 'sortable-ghost',
+    dragClass: 'sortable-drag',
+    onEnd(evt) {
+      const osId     = evt.item.dataset.osId;
+      const novoStat = evt.to.dataset.status;
+      const alerta   = document.getElementById('alertaKanban');
+
+      fetch('/kanban/mover', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ os_id: parseInt(osId), novo_status: novoStat, usuario: usuario() })
+      })
+      .then(r => r.json())
+      .then(d => {
+        if (!d.ok) {
+          alerta.textContent = d.msg;
+          alerta.classList.remove('d-none');
+          // Reverter movimento
+          evt.from.insertBefore(evt.item,
+            evt.from.children[evt.oldIndex] || null);
+          setTimeout(() => alerta.classList.add('d-none'), 5000);
+        }
+      });
+    }
+  });
+});
+</script>
+{% endblock %}

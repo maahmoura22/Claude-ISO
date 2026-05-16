@@ -1,0 +1,216 @@
+{% extends 'base.html' %}
+{% block title %}Erros / Não Conformidades{% endblock %}
+
+{% block content %}
+<div class="page-header">
+  <div>
+    <h1><i class="bi bi-exclamation-triangle me-2 text-accent"></i>Erros / Não Conformidades</h1>
+    <small class="text-muted">Registro e acompanhamento de ocorrências</small>
+  </div>
+  <button class="btn btn-danger" data-bs-toggle="modal" data-bs-target="#modalNovoErro">
+    <i class="bi bi-plus-circle me-1"></i>Registrar Erro
+  </button>
+</div>
+
+<!-- Cards de resumo por tipo -->
+<div class="row g-3 mb-4">
+  {% set tipo_icons = {
+    'engenharia': ('bi-pencil-square', '#6366f1'),
+    'fabrica':    ('bi-gear',          '#f97316'),
+    'processo':   ('bi-diagram-3',     '#f59e0b'),
+    'vendas':     ('bi-bag',           '#ec4899'),
+  } %}
+  {% for tipo, label in TIPO_ERRO_LABELS.items() %}
+  <div class="col-6 col-md-3">
+    <div class="stat-card" style="border-left:3px solid {{ tipo_icons[tipo][1] }}">
+      <div class="stat-icon" style="background:{{ tipo_icons[tipo][1] }}22; color:{{ tipo_icons[tipo][1] }}">
+        <i class="bi {{ tipo_icons[tipo][0] }}"></i>
+      </div>
+      <div>
+        <div class="stat-value">{{ stats_tipo[tipo] }}</div>
+        <div class="stat-label">{{ label }}</div>
+      </div>
+    </div>
+  </div>
+  {% endfor %}
+</div>
+
+<!-- Filtros -->
+<div class="card-eng mb-3">
+  <form method="GET" class="row g-2 align-items-end">
+    <div class="col-md-4">
+      <label class="form-label">Tipo</label>
+      <select name="tipo" class="form-select form-select-sm">
+        <option value="">Todos os tipos</option>
+        {% for t, l in TIPO_ERRO_LABELS.items() %}
+        <option value="{{ t }}" {% if filtro_tipo==t %}selected{% endif %}>{{ l }}</option>
+        {% endfor %}
+      </select>
+    </div>
+    <div class="col-md-4">
+      <label class="form-label">Status</label>
+      <select name="status" class="form-select form-select-sm">
+        <option value="">Todos</option>
+        <option value="aberto"    {% if filtro_status=='aberto'    %}selected{% endif %}>Aberto</option>
+        <option value="resolvido" {% if filtro_status=='resolvido' %}selected{% endif %}>Resolvido</option>
+      </select>
+    </div>
+    <div class="col-md-2">
+      <button type="submit" class="btn btn-outline-accent btn-sm w-100">Filtrar</button>
+    </div>
+    <div class="col-md-2">
+      <a href="{{ url_for('erros') }}" class="btn btn-outline-secondary btn-sm w-100">Limpar</a>
+    </div>
+  </form>
+</div>
+
+<!-- Lista de erros -->
+{% if erros %}
+<div class="row g-3">
+  {% for erro in erros %}
+  <div class="col-12">
+    <div class="card-eng" style="border-left:3px solid {% if erro.status == 'aberto' %}var(--danger){% else %}var(--ok){% endif %}">
+      <div class="d-flex align-items-start justify-content-between flex-wrap gap-2">
+        <div class="d-flex align-items-center gap-2 flex-wrap">
+          <a href="{{ url_for('os_detalhe', os_id=erro.os_id) }}"
+             class="fw-bold" style="color:var(--text)">OS {{ erro.os.numero }}</a>
+          <span class="badge-eng badge-muted">{{ erro.os.cliente }}</span>
+          <span class="badge-eng {% if erro.status == 'aberto' %}badge-danger{% else %}badge-ok{% endif %}">
+            {{ 'Aberto' if erro.status == 'aberto' else 'Resolvido' }}
+          </span>
+          <span class="badge-eng badge-muted">{{ TIPO_ERRO_LABELS[erro.tipo] }}</span>
+        </div>
+        <small class="text-muted">{{ erro.created_at.strftime('%d/%m/%Y %H:%M') }}</small>
+      </div>
+
+      <p class="mt-2 mb-1">{{ erro.descricao }}</p>
+
+      {% if erro.acao_corretiva %}
+      <div class="p-2 rounded mt-1" style="background:var(--bg-card2); font-size:.83rem">
+        <i class="bi bi-wrench me-1 text-accent"></i>
+        <strong>Ação Corretiva:</strong> {{ erro.acao_corretiva }}
+      </div>
+      {% endif %}
+
+      <div class="d-flex align-items-center justify-content-between mt-2">
+        <small class="text-muted">
+          <i class="bi bi-person me-1"></i>Identificado por: {{ erro.identificado_por }}
+        </small>
+        {% if erro.status == 'aberto' %}
+        <button class="btn btn-sm btn-outline-success"
+                data-bs-toggle="modal"
+                data-bs-target="#modalResolver{{ erro.id }}">
+          <i class="bi bi-check2 me-1"></i>Marcar como Resolvido
+        </button>
+        {% endif %}
+      </div>
+    </div>
+
+    <!-- Modal resolver -->
+    {% if erro.status == 'aberto' %}
+    <div class="modal fade" id="modalResolver{{ erro.id }}" tabindex="-1">
+      <div class="modal-dialog">
+        <div class="modal-content" style="background:var(--bg-card); border:1px solid var(--border)">
+          <div class="modal-header border-0">
+            <h5 class="modal-title">Resolver Erro — OS {{ erro.os.numero }}</h5>
+            <button type="button" class="btn-close btn-close-white" data-bs-dismiss="modal"></button>
+          </div>
+          <form method="POST" action="{{ url_for('resolver_erro', erro_id=erro.id) }}">
+            <div class="modal-body">
+              <p class="text-muted">{{ erro.descricao }}</p>
+              <div class="mb-3">
+                <label class="form-label">Ação Corretiva *</label>
+                <textarea name="acao_corretiva" class="form-control" rows="3"
+                          required>{{ erro.acao_corretiva or '' }}</textarea>
+              </div>
+            </div>
+            <div class="modal-footer border-0">
+              <button type="button" class="btn btn-outline-secondary" data-bs-dismiss="modal">Cancelar</button>
+              <button type="submit" class="btn btn-success">Confirmar Resolução</button>
+            </div>
+          </form>
+        </div>
+      </div>
+    </div>
+    {% endif %}
+  </div>
+  {% endfor %}
+</div>
+{% else %}
+<div class="card-eng text-center py-5">
+  <i class="bi bi-check-circle" style="font-size:3rem; color:var(--ok); opacity:.5"></i>
+  <p class="mt-3 text-muted">Nenhum erro encontrado com os filtros selecionados.</p>
+</div>
+{% endif %}
+
+<!-- Modal: Novo Erro -->
+<div class="modal fade" id="modalNovoErro" tabindex="-1">
+  <div class="modal-dialog">
+    <div class="modal-content" style="background:var(--bg-card); border:1px solid var(--border)">
+      <div class="modal-header border-0">
+        <h5 class="modal-title text-danger">Registrar Erro / Não Conformidade</h5>
+        <button type="button" class="btn-close btn-close-white" data-bs-dismiss="modal"></button>
+      </div>
+      <form method="POST" action="{{ url_for('novo_erro') }}">
+        <div class="modal-body">
+          <div class="mb-3">
+            <label class="form-label">Número da OS *</label>
+            <input type="text" name="os_numero" class="form-control" required
+                   placeholder="ex: OS-2024-001" list="osList">
+            <datalist id="osList"></datalist>
+          </div>
+          <div class="mb-3">
+            <label class="form-label">Tipo *</label>
+            <select name="tipo" class="form-select" required>
+              <option value="">Selecione...</option>
+              {% for t, l in TIPO_ERRO_LABELS.items() %}
+              <option value="{{ t }}">{{ l }}</option>
+              {% endfor %}
+            </select>
+          </div>
+          <div class="mb-3">
+            <label class="form-label">Descrição *</label>
+            <textarea name="descricao" class="form-control" rows="3" required></textarea>
+          </div>
+          <div class="mb-3">
+            <label class="form-label">Identificado por *</label>
+            <select name="identificado_por" class="form-select" required>
+              <option value="">Selecione...</option>
+              {% for u in ['Patrick','Lucas','Breno','Gustavo','Wesley','Processista 1','Processista 2'] %}
+              <option value="{{ u }}">{{ u }}</option>
+              {% endfor %}
+            </select>
+          </div>
+          <div class="mb-3">
+            <label class="form-label">Ação Corretiva (opcional)</label>
+            <textarea name="acao_corretiva" class="form-control" rows="2"></textarea>
+          </div>
+        </div>
+        <div class="modal-footer border-0">
+          <button type="button" class="btn btn-outline-secondary" data-bs-dismiss="modal">Cancelar</button>
+          <button type="submit" class="btn btn-danger">Registrar</button>
+        </div>
+      </form>
+    </div>
+  </div>
+</div>
+{% endblock %}
+
+{% block scripts %}
+<script>
+// Autocomplete de números de OS
+const input = document.querySelector('[name=os_numero]');
+if (input) {
+  input.addEventListener('input', () => {
+    fetch('/api/os-numeros?q=' + input.value)
+      .then(r => r.json())
+      .then(data => {
+        const dl = document.getElementById('osList');
+        dl.innerHTML = data.map(o =>
+          `<option value="${o.numero}" label="${o.cliente}"></option>`
+        ).join('');
+      });
+  });
+}
+</script>
+{% endblock %}

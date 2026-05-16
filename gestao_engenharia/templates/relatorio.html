@@ -1,0 +1,57 @@
+{% extends 'base.html' %}
+{% block title %}Relatório Mensal{% endblock %}
+
+{% block content %}
+<div class="page-header">
+  <div>
+    <h1><i class="bi bi-file-earmark-pdf me-2 text-accent"></i>Relatório Mensal</h1>
+    <small class="text-muted">Exportação em PDF do desempenho do setor</small>
+  </div>
+</div>
+
+<div class="row justify-content-center">
+  <div class="col-lg-6">
+    <div class="card-eng">
+      <div class="section-title"><i class="bi bi-calendar3 me-1"></i>Selecione o Período</div>
+
+      <form method="GET" action="{{ url_for('relatorio') }}" class="mb-4">
+        <div class="row g-3 mb-3">
+          <div class="col-6">
+            <label class="form-label">Mês</label>
+            <select name="mes" class="form-select">
+              {% for i in range(12) %}
+              <option value="{{ i+1 }}" {% if mes == i+1 %}selected{% endif %}>{{ meses[i] }}</option>
+              {% endfor %}
+            </select>
+          </div>
+          <div class="col-6">
+            <label class="form-label">Ano</label>
+            <select name="ano" class="form-select">
+              {% for a in anos %}
+              <option value="{{ a }}" {% if ano == a %}selected{% endif %}>{{ a }}</option>
+              {% endfor %}
+            </select>
+          </div>
+        </div>
+        <button type="submit" class="btn btn-outline-accent w-100">
+          <i class="bi bi-eye me-1"></i>Visualizar Período
+        </button>
+      </form>
+
+      <hr style="border-color:var(--border)">
+
+      <div class="text-center mt-3">
+        <p class="text-muted mb-3">
+          O relatório PDF incluirá:<br>
+          OSs entregues · OSs atrasadas · Erros por categoria · Produtividade por desenhista
+        </p>
+        <a href="{{ url_for('relatorio_pdf', mes=mes, ano=ano) }}"
+           class="btn btn-danger btn-lg px-5" target="_blank">
+          <i class="bi bi-file-earmark-pdf-fill me-2"></i>
+          Exportar PDF — {{ meses[mes-1] }}/{{ ano }}
+        </a>
+      </div>
+    </div>
+  </div>
+</div>
+{% endblock %}

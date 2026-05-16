@@ -1,0 +1,300 @@
+{% extends 'base.html' %}
+{% block title %}OS {{ os.numero }}{% endblock %}
+
+{% block content %}
+<div class="page-header">
+  <div>
+    <h1>
+      OS {{ os.numero }}
+      {% if os.complexidade == 'simples' %}
+        <span class="badge-eng badge-ok ms-2">🟢 Simples</span>
+      {% elif os.complexidade == 'media' %}
+        <span class="badge-eng badge-warn ms-2">🟡 Média</span>
+      {% else %}
+        <span class="badge-eng badge-danger ms-2">🔴 Complexa</span>
+      {% endif %}
+    </h1>
+    <small class="text-muted">{{ os.cliente }} — {{ os.descricao_peca }}</small>
+  </div>
+  <div class="d-flex gap-2">
+    <a href="{{ url_for('editar_os', os_id=os.id) }}" class="btn btn-outline-secondary btn-sm">
+      <i class="bi bi-pencil me-1"></i>Editar
+    </a>
+    <a href="{{ url_for('dashboard') }}" class="btn btn-outline-secondary btn-sm">
+      <i class="bi bi-arrow-left me-1"></i>Voltar
+    </a>
+  </div>
+</div>
+
+<div class="row g-4">
+  <!-- Coluna esquerda: Info + Ações -->
+  <div class="col-lg-4">
+
+    <!-- Info geral -->
+    <div class="card-eng mb-3">
+      <div class="section-title"><i class="bi bi-info-circle me-1"></i>Informações</div>
+      <table class="w-100" style="font-size:.88rem">
+        <tr><td class="text-muted pb-2">Abertura</td><td class="text-end fw-bold">{{ os.data_abertura.strftime('%d/%m/%Y') }}</td></tr>
+        <tr><td class="text-muted pb-2">Prazo</td><td class="text-end fw-bold">{{ os.prazo.strftime('%d/%m/%Y') }}</td></tr>
+        <tr><td class="text-muted pb-2">Dias Restantes</td>
+          <td class="text-end fw-bold">
+            {% set dr = os.dias_restantes %}
+            {% if os.status == 'liberado_fabrica' %}
+              <span class="text-muted">Concluída</span>
+            {% elif dr < 0 %}
+              <span class="dias-danger">{{ dr }} dias</span>
+            {% elif dr <= 3 %}
+              <span class="dias-warn">{{ dr }} dias</span>
+            {% else %}
+              <span class="dias-ok">{{ dr }} dias</span>
+            {% endif %}
+          </td>
+        </tr>
+        <tr><td class="text-muted pb-2">Desenhista</td><td class="text-end">{{ os.responsavel_desenhista }}</td></tr>
+        <tr><td class="text-muted pb-2">Processista</td><td class="text-end">{{ os.processista or '—' }}</td></tr>
+      </table>
+      {% if os.observacoes %}
+      <div class="mt-3 p-2 rounded" style="background:var(--bg-card2); font-size:.83rem; color:var(--text-muted)">
+        {{ os.observacoes }}
+      </div>
+      {% endif %}
+    </div>
+
+    <!-- Status atual -->
+    <div class="card-eng mb-3">
+      <div class="section-title"><i class="bi bi-flag me-1"></i>Status Atual</div>
+      <div class="text-center py-2">
+        <span class="badge-eng badge-accent" style="font-size:.95rem; padding:8px 18px">
+          {{ STATUS_LABELS[os.status] }}
+        </span>
+      </div>
+
+      <!-- Avançar / Retroceder -->
+      {% set sequencia = ['desenho_andamento','com_processista','revisao_desenho','revisao_processo','liberado_fabrica'] %}
+      {% set idx = sequencia.index(os.status) %}
+
+      <div class="mt-3">
+        <!-- Avançar -->
+        {% if idx < sequencia|length - 1 %}
+        <button class="btn btn-accent w-100 mb-2" data-bs-toggle="modal" data-bs-target="#modalAvancar">
+          <i class="bi bi-arrow-right-circle me-1"></i>
+          Avançar → {{ STATUS_LABELS[sequencia[idx+1]] }}
+        </button>
+        {% endif %}
+
+        <!-- Retroceder -->
+        {% if idx > 0 %}
+        <button class="btn btn-outline-secondary w-100" data-bs-toggle="modal" data-bs-target="#modalRetroceder">
+          <i class="bi bi-arrow-left-circle me-1"></i>Retroceder
+        </button>
+        {% endif %}
+      </div>
+    </div>
+
+    <!-- Checklist resumo -->
+    <div class="card-eng mb-3">
+      <div class="section-title"><i class="bi bi-check2-square me-1"></i>Checklist</div>
+      {% if checklist %}
+        {% set pct = (checklist.itens_ok / 8 * 100)|int %}
+        <div class="d-flex justify-content-between mb-1" style="font-size:.82rem">
+          <span>{{ checklist.itens_ok }}/8 itens</span>
+          <span class="{% if checklist.completo %}text-success{% else %}text-warning{% endif %}">
+            {{ pct }}%
+          </span>
+        </div>
+        <div class="checklist-progress">
+          <div class="checklist-progress-bar" style="width:{{ pct }}%"></div>
+        </div>
+        {% if checklist.completo %}
+          <div class="text-success mt-2 text-center" style="font-size:.85rem">
+            <i class="bi bi-check-circle-fill me-1"></i>Checklist completo
+          </div>
+        {% else %}
+          <div class="text-warning mt-2 text-center" style="font-size:.85rem">
+            <i class="bi bi-exclamation-circle me-1"></i>Incompleto — não pode avançar
+          </div>
+        {% endif %}
+      {% else %}
+        <div class="text-muted text-center" style="font-size:.85rem">
+          <i class="bi bi-clipboard-x me-1"></i>Não preenchido
+        </div>
+      {% endif %}
+      <a href="{{ url_for('checklist', os_id=os.id) }}" class="btn btn-outline-accent w-100 mt-3">
+        <i class="bi bi-pencil-square me-1"></i>
+        {% if checklist %}Editar Checklist{% else %}Preencher Checklist{% endif %}
+      </a>
+    </div>
+
+  </div>
+
+  <!-- Coluna direita: Histórico + Erros -->
+  <div class="col-lg-8">
+
+    <!-- Histórico de status -->
+    <div class="card-eng mb-4">
+      <div class="section-title"><i class="bi bi-clock-history me-1"></i>Histórico de Status</div>
+      {% if os.historico %}
+      <div class="timeline">
+        {% for h in os.historico|reverse %}
+        <div class="tl-item">
+          <div class="tl-dot"></div>
+          <div class="tl-body">
+            <strong>{{ STATUS_LABELS.get(h.status_novo, h.status_novo) }}</strong>
+            {% if h.status_anterior %}
+            <span class="text-muted"> ← {{ STATUS_LABELS.get(h.status_anterior, h.status_anterior) }}</span>
+            {% endif %}
+            {% if h.usuario %}<span class="text-muted ms-2">por {{ h.usuario }}</span>{% endif %}
+            {% if h.observacao %}<div class="text-muted" style="font-size:.8rem">{{ h.observacao }}</div>{% endif %}
+            <div class="tl-time">{{ h.data_mudanca.strftime('%d/%m/%Y %H:%M') }}</div>
+          </div>
+        </div>
+        {% endfor %}
+      </div>
+      {% else %}
+      <p class="text-muted text-center">Nenhum histórico ainda.</p>
+      {% endif %}
+    </div>
+
+    <!-- Erros / Não conformidades desta OS -->
+    <div class="card-eng">
+      <div class="d-flex align-items-center justify-content-between mb-3">
+        <div class="section-title mb-0"><i class="bi bi-bug me-1"></i>Erros / Não Conformidades</div>
+        <button class="btn btn-sm btn-outline-danger" data-bs-toggle="modal" data-bs-target="#modalErro">
+          <i class="bi bi-plus me-1"></i>Registrar Erro
+        </button>
+      </div>
+      {% if os.erros %}
+      {% for erro in os.erros %}
+      <div class="card-eng-sm mb-2">
+        <div class="d-flex align-items-start justify-content-between">
+          <div>
+            <span class="badge-eng {% if erro.status == 'aberto' %}badge-danger{% else %}badge-ok{% endif %} me-2">
+              {{ erro.status|capitalize }}
+            </span>
+            <span class="badge-eng badge-muted">{{ TIPO_ERRO_LABELS[erro.tipo] }}</span>
+          </div>
+          <small class="text-muted">{{ erro.created_at.strftime('%d/%m/%Y') }}</small>
+        </div>
+        <p class="mt-2 mb-1" style="font-size:.88rem">{{ erro.descricao }}</p>
+        {% if erro.acao_corretiva %}
+        <p class="text-muted mb-0" style="font-size:.8rem">
+          <i class="bi bi-wrench me-1"></i>{{ erro.acao_corretiva }}
+        </p>
+        {% endif %}
+        <small class="text-muted">Identificado por: {{ erro.identificado_por }}</small>
+      </div>
+      {% endfor %}
+      {% else %}
+      <p class="text-muted text-center">Nenhum erro registrado para esta OS.</p>
+      {% endif %}
+    </div>
+
+  </div>
+</div>
+
+<!-- Modal: Avançar Status -->
+<div class="modal fade" id="modalAvancar" tabindex="-1">
+  <div class="modal-dialog">
+    <div class="modal-content" style="background:var(--bg-card); border:1px solid var(--border)">
+      <div class="modal-header border-0">
+        <h5 class="modal-title">Avançar OS</h5>
+        <button type="button" class="btn-close btn-close-white" data-bs-dismiss="modal"></button>
+      </div>
+      <form method="POST" action="{{ url_for('avancar_status', os_id=os.id) }}">
+        <div class="modal-body">
+          <div class="mb-3">
+            <label class="form-label">Usuário</label>
+            <select name="usuario" class="form-select" required>
+              {% for u in usuarios %}<option>{{ u }}</option>{% endfor %}
+            </select>
+          </div>
+          <div class="mb-3">
+            <label class="form-label">Observação (opcional)</label>
+            <textarea name="observacao" class="form-control" rows="2"></textarea>
+          </div>
+        </div>
+        <div class="modal-footer border-0">
+          <button type="button" class="btn btn-outline-secondary" data-bs-dismiss="modal">Cancelar</button>
+          <button type="submit" class="btn btn-accent">Confirmar Avanço</button>
+        </div>
+      </form>
+    </div>
+  </div>
+</div>
+
+<!-- Modal: Retroceder Status -->
+<div class="modal fade" id="modalRetroceder" tabindex="-1">
+  <div class="modal-dialog">
+    <div class="modal-content" style="background:var(--bg-card); border:1px solid var(--border)">
+      <div class="modal-header border-0">
+        <h5 class="modal-title text-warning">Retroceder OS</h5>
+        <button type="button" class="btn-close btn-close-white" data-bs-dismiss="modal"></button>
+      </div>
+      <form method="POST" action="{{ url_for('retroceder_status', os_id=os.id) }}">
+        <div class="modal-body">
+          <div class="mb-3">
+            <label class="form-label">Usuário</label>
+            <select name="usuario" class="form-select">
+              {% for u in usuarios %}<option>{{ u }}</option>{% endfor %}
+            </select>
+          </div>
+          <div class="mb-3">
+            <label class="form-label">Motivo</label>
+            <textarea name="observacao" class="form-control" rows="2" required></textarea>
+          </div>
+        </div>
+        <div class="modal-footer border-0">
+          <button type="button" class="btn btn-outline-secondary" data-bs-dismiss="modal">Cancelar</button>
+          <button type="submit" class="btn btn-warning">Retroceder</button>
+        </div>
+      </form>
+    </div>
+  </div>
+</div>
+
+<!-- Modal: Registrar Erro -->
+<div class="modal fade" id="modalErro" tabindex="-1">
+  <div class="modal-dialog">
+    <div class="modal-content" style="background:var(--bg-card); border:1px solid var(--border)">
+      <div class="modal-header border-0">
+        <h5 class="modal-title text-danger">Registrar Erro / Não Conformidade</h5>
+        <button type="button" class="btn-close btn-close-white" data-bs-dismiss="modal"></button>
+      </div>
+      <form method="POST" action="{{ url_for('novo_erro') }}">
+        <input type="hidden" name="os_numero" value="{{ os.numero }}">
+        <div class="modal-body">
+          <div class="mb-3">
+            <label class="form-label">Tipo *</label>
+            <select name="tipo" class="form-select" required>
+              <option value="">Selecione...</option>
+              <option value="engenharia">Erro de Engenharia</option>
+              <option value="fabrica">Erro de Fábrica</option>
+              <option value="processo">Erro de Processo</option>
+              <option value="vendas">Pendência de Vendas</option>
+            </select>
+          </div>
+          <div class="mb-3">
+            <label class="form-label">Descrição *</label>
+            <textarea name="descricao" class="form-control" rows="3" required></textarea>
+          </div>
+          <div class="mb-3">
+            <label class="form-label">Identificado por *</label>
+            <select name="identificado_por" class="form-select" required>
+              <option value="">Selecione...</option>
+              {% for u in usuarios %}<option>{{ u }}</option>{% endfor %}
+            </select>
+          </div>
+          <div class="mb-3">
+            <label class="form-label">Ação Corretiva (opcional)</label>
+            <textarea name="acao_corretiva" class="form-control" rows="2"></textarea>
+          </div>
+        </div>
+        <div class="modal-footer border-0">
+          <button type="button" class="btn btn-outline-secondary" data-bs-dismiss="modal">Cancelar</button>
+          <button type="submit" class="btn btn-danger">Registrar Erro</button>
+        </div>
+      </form>
+    </div>
+  </div>
+</div>
+{% endblock %}
