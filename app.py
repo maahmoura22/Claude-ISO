@@ -3,9 +3,11 @@ from flask import Flask, send_file
 
 app = Flask(__name__)
 
+BASE_DIR = os.path.dirname(os.path.abspath(__file__))
+
 @app.route("/")
 def index():
-    return send_file("iso-tolerancias.html")
+    return send_file(os.path.join(BASE_DIR, "iso-tolerancias.html"))
 
 if __name__ == "__main__":
     port = int(os.environ.get("PORT", 5000))
