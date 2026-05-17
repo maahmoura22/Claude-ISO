@@ -1,0 +1,78 @@
+{% extends 'base.html' %}
+{% block title %}Erros / Não Conformidades{% endblock %}
+{% block content %}
+<div class="page-title">⚠️ Registro de Não Conformidades</div>
+<div class="grid-2" style="align-items:start">
+
+  <!-- Formulário novo erro -->
+  <div class="card">
+    <div style="font-weight:600;margin-bottom:14px">Registrar Nova Não Conformidade</div>
+    <form method="post">
+      <div class="form-group">
+        <label>Nº da OS</label>
+        <input name="os_numero" placeholder="Ex: OS-2024-001" list="os-list" />
+        <datalist id="os-list">
+          {% for o in todos_os %}<option value="{{ o.numero }}">{{ o.numero }} — {{ o.cliente }}</option>{% endfor %}
+        </datalist>
+      </div>
+      <div class="form-group">
+        <label>Tipo *</label>
+        <select name="tipo" required>
+          {% for t in tipos %}<option value="{{ t }}">{{ t }}</option>{% endfor %}
+        </select>
+      </div>
+      <div class="form-group">
+        <label>Descrição *</label>
+        <textarea name="descricao" required placeholder="Descreva o problema encontrado..."></textarea>
+      </div>
+      <div class="form-group">
+        <label>Identificado por *</label>
+        <input name="identificado_por" required placeholder="Nome de quem identificou" />
+      </div>
+      <div class="form-group">
+        <label>Ação Corretiva</label>
+        <textarea name="acao_corretiva" placeholder="Descreva a ação tomada (opcional)"></textarea>
+      </div>
+      <button type="submit" class="btn btn-vermelho">Registrar</button>
+    </form>
+  </div>
+
+  <!-- Lista de erros -->
+  <div>
+    <form method="get" style="margin-bottom:12px">
+      <div class="filters">
+        <select name="tipo"><option value="">Todos os tipos</option>{% for t in tipos %}<option value="{{ t }}" {% if filtro_tipo==t %}selected{% endif %}>{{ t }}</option>{% endfor %}</select>
+        <select name="status"><option value="">Todos os status</option><option value="Aberto" {% if filtro_status=='Aberto' %}selected{% endif %}>Aberto</option><option value="Resolvido" {% if filtro_status=='Resolvido' %}selected{% endif %}>Resolvido</option></select>
+        <button type="submit" class="btn btn-ghost">Filtrar</button>
+        <a href="{{ url_for('erros') }}" class="btn btn-ghost">Limpar</a>
+      </div>
+    </form>
+
+    {% if lista %}
+    {% for e in lista %}
+    <div class="card" style="margin-bottom:10px;border-left:3px solid {% if e.status=='Resolvido' %}var(--verde){% else %}var(--vermelho){% endif %}">
+      <div style="display:flex;justify-content:space-between;align-items:flex-start;margin-bottom:8px">
+        <div>
+          <span class="badge {% if e.status=='Resolvido' %}badge-verde{% else %}badge-vermelho{% endif %}">{{ e.status }}</span>
+          <span style="font-size:11px;color:var(--text2);margin-left:8px">{{ e.tipo }}</span>
+        </div>
+        <span style="font-size:11px;color:var(--text2)">{{ e.data.strftime('%d/%m/%Y') }}</span>
+      </div>
+      {% if e.os %}<div style="font-size:12px;color:var(--azul);margin-bottom:4px"><a href="{{ url_for('detalhe_os', os_id=e.os_id) }}">OS {{ e.os.numero }}</a> — {{ e.os.cliente }}</div>{% endif %}
+      <div style="font-size:13px;margin-bottom:4px">{{ e.descricao }}</div>
+      <div style="font-size:11px;color:var(--text2)">Identificado por: {{ e.identificado_por }}</div>
+      {% if e.acao_corretiva %}<div style="font-size:12px;color:var(--verde);margin-top:4px">✓ {{ e.acao_corretiva }}</div>{% endif %}
+      {% if e.status == 'Aberto' %}
+      <form method="post" action="{{ url_for('resolver_erro', erro_id=e.id) }}" style="margin-top:10px;display:flex;gap:6px">
+        <input name="acao_corretiva" placeholder="Ação corretiva..." style="flex:1;font-size:12px;padding:4px 8px" />
+        <button type="submit" class="btn btn-verde" style="padding:4px 10px;font-size:12px">Resolver</button>
+      </form>
+      {% endif %}
+    </div>
+    {% endfor %}
+    {% else %}
+    <div class="card" style="text-align:center;color:var(--text2);padding:40px">Nenhuma não conformidade encontrada.</div>
+    {% endif %}
+  </div>
+</div>
+{% endblock %}

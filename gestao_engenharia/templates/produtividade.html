@@ -1,0 +1,66 @@
+{% extends 'base.html' %}
+{% block title %}Produtividade{% endblock %}
+{% block content %}
+<div style="display:flex;align-items:center;gap:16px;margin-bottom:20px">
+  <div class="page-title" style="margin:0">📈 Produtividade</div>
+  <form method="get" style="display:flex;gap:8px;align-items:center">
+    <input type="month" name="mes" value="{{ mes }}" style="width:auto" />
+    <button type="submit" class="btn btn-ghost">Ver</button>
+  </form>
+  <a href="{{ url_for('relatorio_pdf', mes=mes) }}" class="btn btn-primary" style="margin-left:auto">⬇ PDF</a>
+</div>
+
+<div class="card" style="margin-bottom:20px;overflow-x:auto">
+  <table>
+    <thead>
+      <tr>
+        <th>Desenhista</th>
+        <th>OSs Concluídas (mês)</th>
+        <th>Em Andamento</th>
+        <th>Taxa Prazo Cumprido</th>
+        <th>Erros Registrados</th>
+      </tr>
+    </thead>
+    <tbody>
+    {% for d in dados %}
+    <tr>
+      <td><strong>{{ d.nome }}</strong></td>
+      <td>
+        <span style="font-size:20px;font-weight:700;color:var(--verde)">{{ d.concluidas }}</span>
+      </td>
+      <td>{{ d.andamento }}</td>
+      <td>
+        <div style="display:flex;align-items:center;gap:8px">
+          <div class="progress-bar" style="width:100px">
+            <div class="progress-fill" style="width:{{ d.taxa }}%;background:{% if d.taxa >= 80 %}var(--verde){% elif d.taxa >= 50 %}var(--amarelo){% else %}var(--vermelho){% endif %}"></div>
+          </div>
+          <span style="font-size:12px;color:var(--text2)">{{ d.taxa }}%</span>
+        </div>
+      </td>
+      <td>
+        <span class="badge {% if d.erros == 0 %}badge-verde{% elif d.erros <= 2 %}badge-amarelo{% else %}badge-vermelho{% endif %}">
+          {{ d.erros }}
+        </span>
+      </td>
+    </tr>
+    {% endfor %}
+    </tbody>
+  </table>
+</div>
+
+<!-- Gráfico de barras -->
+<div class="card">
+  <div style="font-weight:600;margin-bottom:16px">OSs Concluídas por Desenhista</div>
+  <div style="display:flex;align-items:flex-end;gap:20px;height:160px;padding:0 8px">
+    {% set max_val = dados|map(attribute='concluidas')|max if dados else 1 %}
+    {% set max_val = max_val if max_val > 0 else 1 %}
+    {% for d in dados %}
+    <div style="flex:1;display:flex;flex-direction:column;align-items:center;gap:6px">
+      <span style="font-size:13px;font-weight:600;color:var(--verde)">{{ d.concluidas }}</span>
+      <div style="width:100%;background:var(--azul);border-radius:4px 4px 0 0;height:{{ (d.concluidas/max_val*120)|int }}px;min-height:4px"></div>
+      <span style="font-size:12px;color:var(--text2)">{{ d.nome }}</span>
+    </div>
+    {% endfor %}
+  </div>
+</div>
+{% endblock %}

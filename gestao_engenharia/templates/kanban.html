@@ -1,0 +1,60 @@
+{% extends 'base.html' %}
+{% block title %}Kanban{% endblock %}
+{% block content %}
+<div class="page-title">📋 Kanban de OSs</div>
+<div style="display:flex;gap:12px;overflow-x:auto;padding-bottom:16px">
+  {% for col in status_list %}
+  <div style="min-width:240px;flex-shrink:0">
+    <div style="background:var(--bg3);border:1px solid var(--border);border-radius:8px 8px 0 0;padding:10px 12px;font-weight:600;font-size:13px;display:flex;justify-content:space-between">
+      <span>{{ col }}</span>
+      <span style="background:var(--border);border-radius:10px;padding:1px 8px;font-size:11px">{{ colunas[col]|length }}</span>
+    </div>
+    <div class="kanban-col" data-status="{{ col }}" style="min-height:400px;border:1px solid var(--border);border-top:none;border-radius:0 0 8px 8px;padding:8px;display:flex;flex-direction:column;gap:8px">
+      {% for os in colunas[col] %}
+      <div class="kanban-card" data-id="{{ os.id }}" style="background:var(--bg2);border:1px solid var(--border);border-radius:6px;padding:10px;cursor:grab">
+        <div style="display:flex;justify-content:space-between;margin-bottom:6px">
+          <a href="{{ url_for('detalhe_os', os_id=os.id) }}" style="font-weight:600;font-size:13px">{{ os.numero }}</a>
+          <span style="font-size:16px">{{ os.complexidade_emoji }}</span>
+        </div>
+        <div style="color:var(--text2);font-size:12px;margin-bottom:4px">{{ os.cliente }}</div>
+        <div style="font-size:11px;color:var(--text2)">{{ os.responsavel }}</div>
+        <div style="margin-top:6px">
+          {% set d = os.dias_restantes %}
+          {% if d < 0 %}<span class="badge badge-vermelho" style="font-size:10px">{{ d }}d ATRASADA</span>
+          {% elif d <= 3 %}<span class="badge badge-vermelho" style="font-size:10px">{{ d }}d ⚠️</span>
+          {% elif d <= 7 %}<span class="badge badge-amarelo" style="font-size:10px">{{ d }}d</span>
+          {% else %}<span class="badge badge-verde" style="font-size:10px">{{ d }}d</span>{% endif %}
+        </div>
+      </div>
+      {% endfor %}
+    </div>
+  </div>
+  {% endfor %}
+</div>
+
+<script src="https://cdn.jsdelivr.net/npm/sortablejs@1.15.2/Sortable.min.js"></script>
+<script>
+document.querySelectorAll('.kanban-col').forEach(col => {
+  Sortable.create(col, {
+    group: 'kanban',
+    animation: 150,
+    ghostClass: 'dragging',
+    onEnd(evt) {
+      const id = evt.item.dataset.id;
+      const status = evt.to.dataset.status;
+      fetch(`/os/${id}/mover`, {
+        method: 'POST',
+        headers: {'Content-Type': 'application/json'},
+        body: JSON.stringify({status})
+      }).then(r => r.json()).then(d => {
+        if (!d.ok) {
+          alert('⚠️ ' + d.erro);
+          evt.from.insertBefore(evt.item, evt.from.children[evt.oldIndex]);
+        }
+      });
+    }
+  });
+});
+</script>
+<style>.dragging { opacity: .4; } .kanban-card:hover { border-color: var(--azul) !important; }</style>
+{% endblock %}

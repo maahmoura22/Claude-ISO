@@ -1,0 +1,71 @@
+{% extends 'base.html' %}
+{% block title %}Dashboard — Gestão Engenharia{% endblock %}
+{% block content %}
+<div class="page-title">Dashboard</div>
+
+<div class="stat-grid">
+  <div class="stat-card azul"><div class="num">{{ total }}</div><div class="lbl">Total de OSs</div></div>
+  <div class="stat-card amarelo"><div class="num">{{ andamento }}</div><div class="lbl">Em Andamento</div></div>
+  <div class="stat-card vermelho"><div class="num">{{ atrasadas }}</div><div class="lbl">Atrasadas</div></div>
+  <div class="stat-card verde"><div class="num">{{ liberadas }}</div><div class="lbl">Liberadas Fábrica</div></div>
+</div>
+
+<div class="card">
+  <form method="get" style="margin-bottom:16px">
+    <div class="filters">
+      <input name="q" value="{{ q }}" placeholder="🔍 Buscar por OS, cliente..." />
+      <select name="status">
+        <option value="">Todos os status</option>
+        {% for s in status_list %}<option value="{{ s }}" {% if filtro_status==s %}selected{% endif %}>{{ s }}</option>{% endfor %}
+      </select>
+      <select name="complexidade">
+        <option value="">Todas as complexidades</option>
+        {% for k,v in complexidade.items() %}<option value="{{ k }}" {% if filtro_complexidade==k %}selected{% endif %}>{{ v }} {{ k|title }}</option>{% endfor %}
+      </select>
+      <button type="submit" class="btn btn-ghost">Filtrar</button>
+      <a href="{{ url_for('dashboard') }}" class="btn btn-ghost">Limpar</a>
+    </div>
+  </form>
+
+  {% if lista %}
+  <div style="overflow-x:auto">
+  <table>
+    <thead>
+      <tr>
+        <th>Nº OS</th><th>Cliente</th><th>Peça</th><th>Responsável</th>
+        <th>Complexidade</th><th>Status</th><th>Prazo</th><th>Dias</th><th></th>
+      </tr>
+    </thead>
+    <tbody>
+    {% for os in lista %}
+      <tr>
+        <td><strong>{{ os.numero }}</strong></td>
+        <td>{{ os.cliente }}</td>
+        <td style="max-width:200px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap">{{ os.descricao }}</td>
+        <td>{{ os.responsavel }}</td>
+        <td style="text-align:center;font-size:18px">{{ os.complexidade_emoji }}</td>
+        <td><span class="badge badge-azul" style="font-size:10px">{{ os.status }}</span></td>
+        <td>{{ os.prazo.strftime('%d/%m/%Y') }}</td>
+        <td>
+          {% set d = os.dias_restantes %}
+          {% if d < 0 %}
+            <span class="badge badge-vermelho">{{ d }}d</span>
+          {% elif d <= 3 %}
+            <span class="badge badge-vermelho">{{ d }}d ⚠️</span>
+          {% elif d <= 7 %}
+            <span class="badge badge-amarelo">{{ d }}d</span>
+          {% else %}
+            <span class="badge badge-verde">{{ d }}d</span>
+          {% endif %}
+        </td>
+        <td><a href="{{ url_for('detalhe_os', os_id=os.id) }}" class="btn btn-ghost" style="padding:4px 10px;font-size:12px">Ver</a></td>
+      </tr>
+    {% endfor %}
+    </tbody>
+  </table>
+  </div>
+  {% else %}
+  <p style="color:var(--text2);text-align:center;padding:40px">Nenhuma OS encontrada.</p>
+  {% endif %}
+</div>
+{% endblock %}

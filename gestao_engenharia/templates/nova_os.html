@@ -1,0 +1,55 @@
+{% extends 'base.html' %}
+{% block title %}Nova OS{% endblock %}
+{% block content %}
+<div class="page-title">➕ Nova Ordem de Serviço</div>
+<div class="card" style="max-width:700px">
+  <form method="post">
+    <div class="grid-2">
+      <div class="form-group">
+        <label>Número da OS *</label>
+        <input name="numero" required placeholder="Ex: OS-2024-001" />
+      </div>
+      <div class="form-group">
+        <label>Data de Abertura *</label>
+        <input type="date" name="data_abertura" value="{{ hoje }}" required />
+      </div>
+    </div>
+    <div class="form-group">
+      <label>Cliente *</label>
+      <input name="cliente" required placeholder="Nome do cliente" />
+    </div>
+    <div class="form-group">
+      <label>Descrição da Peça *</label>
+      <textarea name="descricao" required placeholder="Descreva o redutor / peça a ser trabalhada"></textarea>
+    </div>
+    <div class="grid-3">
+      <div class="form-group">
+        <label>Complexidade *</label>
+        <select name="complexidade" required>
+          <option value="simples">🟢 Simples</option>
+          <option value="media">🟡 Média</option>
+          <option value="complexa">🔴 Complexa</option>
+        </select>
+      </div>
+      <div class="form-group">
+        <label>Desenhista Responsável *</label>
+        <select name="responsavel" required>
+          {% for d in desenhistas %}<option value="{{ d }}">{{ d }}</option>{% endfor %}
+        </select>
+      </div>
+      <div class="form-group">
+        <label>Prazo *</label>
+        <input type="date" name="prazo" value="{{ prazo_padrao }}" required />
+      </div>
+    </div>
+    <div class="form-group">
+      <label>Observações</label>
+      <textarea name="observacoes" placeholder="Informações adicionais..."></textarea>
+    </div>
+    <div style="display:flex;gap:8px">
+      <button type="submit" class="btn btn-primary">Criar OS</button>
+      <a href="{{ url_for('dashboard') }}" class="btn btn-ghost">Cancelar</a>
+    </div>
+  </form>
+</div>
+{% endblock %}
