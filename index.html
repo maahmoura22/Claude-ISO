@@ -1,0 +1,1040 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>ISO Tolerâncias — Ajustes e Encaixes</title>
+<style>
+  :root {
+    --blue:   #1565C0;
+    --blue-lt:#E3F2FD;
+    --green:  #2E7D32;
+    --red:    #C62828;
+    --orange: #E65100;
+    --purple: #6A1B9A;
+    --gray:   #546E7A;
+    --gray-lt:#ECEFF1;
+    --white:  #fff;
+    --bg:     #F5F7FA;
+  }
+  * { box-sizing: border-box; margin: 0; padding: 0; }
+  body { font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif; background: var(--bg); color: #1A1A1A; }
+  /* ── Tab bar ── */
+  .tab-bar {
+    display: flex; background: var(--white); border-bottom: 2px solid var(--gray-lt);
+    position: sticky; top: 0; z-index: 100; overflow-x: auto;
+  }
+  .tab-btn {
+    flex: 1; min-width: 80px; padding: 14px 8px 10px;
+    border: none; background: none; cursor: pointer;
+    display: flex; flex-direction: column; align-items: center; gap: 4px;
+    font-size: 11px; font-weight: 600; color: var(--gray);
+    border-bottom: 3px solid transparent; transition: all .2s;
+  }
+  .tab-btn.active { color: var(--blue); border-bottom-color: var(--blue); }
+  .tab-btn svg { width: 20px; height: 20px; }
+  /* ── Screens ── */
+  .screen { display: none; padding: 16px; max-width: 700px; margin: 0 auto; padding-bottom: 40px; }
+  .screen.active { display: block; }
+  /* ── Typography ── */
+  h1 { font-size: 20px; font-weight: 800; color: var(--blue); margin-bottom: 4px; }
+  .sub { font-size: 13px; color: var(--gray); margin-bottom: 16px; }
+  .section-label { font-size: 13px; font-weight: 700; color: #333; margin: 12px 0 6px; }
+  /* ── Form ── */
+  .field { margin-bottom: 12px; }
+  .field label { display: block; font-size: 13px; font-weight: 600; color: #333; margin-bottom: 4px; }
+  .field input, .field select {
+    width: 100%; border: 1px solid #CFD8DC; border-radius: 6px;
+    padding: 10px 12px; font-size: 15px; color: #1A1A1A;
+    background: #FAFAFA; outline: none; transition: border .2s;
+  }
+  .field input:focus, .field select:focus { border-color: var(--blue); }
+  .field .hint { font-size: 11px; color: #90A4AE; margin-top: 3px; }
+  .row-2 { display: grid; grid-template-columns: 1fr 1fr; gap: 10px; }
+  .row-3 { display: grid; grid-template-columns: 1fr 1fr 1fr; gap: 8px; }
+  /* ── Buttons ── */
+  .btn {
+    display: block; width: 100%; padding: 14px;
+    border: none; border-radius: 8px; font-size: 15px; font-weight: 700;
+    letter-spacing: .5px; cursor: pointer; transition: opacity .2s;
+  }
+  .btn:hover { opacity: .88; }
+  .btn-primary { background: var(--blue); color: var(--white); margin: 12px 0; }
+  .btn-green   { background: var(--green); color: var(--white); margin-top: 8px; }
+  .btn-red     { background: var(--red);   color: var(--white); }
+  /* ── Cards ── */
+  .card {
+    background: var(--white); border-radius: 8px; padding: 14px;
+    margin: 8px 0; border-left: 4px solid var(--blue);
+    box-shadow: 0 1px 4px rgba(0,0,0,.08);
+  }
+  .card-title {
+    font-size: 11px; font-weight: 700; text-transform: uppercase;
+    letter-spacing: .5px; margin-bottom: 10px;
+  }
+  /* ── Badges ── */
+  .badge {
+    display: inline-block; padding: 3px 10px; border-radius: 12px;
+    font-size: 11px; font-weight: 700; color: var(--white); margin-bottom: 4px;
+  }
+  .badge-big {
+    display: block; text-align: center; padding: 12px; border-radius: 8px;
+    font-size: 18px; font-weight: 800; color: var(--white);
+  }
+  /* ── Result rows ── */
+  .result-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 8px; margin: 8px 0; }
+  .result-grid.cols3 { grid-template-columns: 1fr 1fr 1fr; }
+  .res-cell .lbl { font-size: 10px; color: #90A4AE; margin-bottom: 2px; }
+  .res-cell .val { font-size: 15px; font-weight: 700; }
+  .res-cell .sub-val { font-size: 11px; color: #90A4AE; }
+  .divider { border: none; border-top: 1px solid var(--gray-lt); margin: 10px 0; }
+  /* ── Chips ── */
+  .chips { display: flex; flex-wrap: wrap; gap: 6px; margin-bottom: 10px; }
+  .chip {
+    padding: 5px 12px; border-radius: 20px; border: 1px solid #90A4AE;
+    background: var(--white); cursor: pointer; font-size: 12px; font-weight: 600;
+    color: var(--gray); transition: all .15s;
+  }
+  .chip.selected { background: var(--blue); border-color: var(--blue); color: var(--white); }
+  /* ── Equip grid ── */
+  .equip-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 10px; margin-bottom: 12px; }
+  .equip-card {
+    background: var(--white); border-radius: 10px; padding: 14px;
+    border: 2px solid var(--gray-lt); cursor: pointer;
+    text-align: center; transition: all .15s;
+  }
+  .equip-card.selected { border-color: var(--blue); background: var(--blue-lt); }
+  .equip-card .icon { font-size: 28px; margin-bottom: 4px; }
+  .equip-card .name { font-size: 12px; font-weight: 600; color: var(--gray); }
+  .equip-card.selected .name { color: var(--blue); }
+  /* ── Config list ── */
+  .config-item {
+    background: var(--white); border-radius: 8px; padding: 12px;
+    margin-bottom: 8px; border: 2px solid var(--gray-lt);
+    cursor: pointer; display: flex; align-items: flex-start; gap: 10px;
+    transition: all .15s;
+  }
+  .config-item.selected { border-color: var(--blue); background: var(--blue-lt); }
+  .config-dot {
+    width: 16px; height: 16px; border-radius: 50%;
+    border: 2px solid #90A4AE; flex-shrink: 0; margin-top: 2px; transition: all .15s;
+  }
+  .config-item.selected .config-dot { background: var(--blue); border-color: var(--blue); }
+  .config-desc { font-size: 14px; font-weight: 600; color: #333; }
+  .config-item.selected .config-desc { color: var(--blue); }
+  .config-sub { font-size: 12px; color: #90A4AE; margin-top: 2px; }
+  /* ── ISO compare ── */
+  .compare-vs { display: grid; grid-template-columns: 1fr auto 1fr; gap: 10px; align-items: center; margin-bottom: 12px; }
+  .compare-col { text-align: center; }
+  .compare-col .lbl { font-size: 11px; color: #90A4AE; margin-bottom: 4px; }
+  .compare-col .val { font-size: 18px; font-weight: 800; }
+  .vs-text { font-size: 14px; font-weight: 800; color: var(--gray); }
+  .compat-bar-wrap { background: var(--gray-lt); border-radius: 8px; height: 10px; overflow: hidden; margin: 8px 0; }
+  .compat-bar { height: 100%; border-radius: 8px; transition: width .4s; }
+  /* ── Mode toggle ── */
+  .mode-toggle { display: grid; grid-template-columns: 1fr 1fr; background: var(--gray-lt); border-radius: 8px; padding: 4px; margin-bottom: 14px; }
+  .mode-btn { padding: 8px; border: none; background: none; border-radius: 6px; cursor: pointer; font-size: 12px; font-weight: 600; color: var(--gray); }
+  .mode-btn.active { background: var(--blue); color: var(--white); }
+  /* ── History ── */
+  .hist-item {
+    background: var(--white); border-radius: 8px; padding: 12px;
+    margin-bottom: 8px; border-left: 4px solid var(--blue);
+    box-shadow: 0 1px 3px rgba(0,0,0,.07);
+  }
+  .hist-header { display: flex; justify-content: space-between; align-items: center; margin-bottom: 8px; }
+  .hist-detail { font-size: 13px; color: var(--gray); margin-bottom: 2px; }
+  .hist-detail strong { color: #1A1A1A; }
+  .hist-del { font-size: 12px; color: var(--red); font-weight: 600; cursor: pointer; background: none; border: none; }
+  /* ── Alerts ── */
+  .alert { padding: 8px 12px; border-radius: 6px; font-size: 12px; font-weight: 600; margin-top: 8px; }
+  .alert-warn  { background: #FFF3E0; color: var(--orange); }
+  .alert-err   { background: #FFEBEE; color: var(--red); }
+  .alert-ok    { background: #E8F5E9; color: var(--green); }
+  .error-msg   { color: var(--red); font-size: 13px; text-align: center; margin-top: 6px; }
+  /* ── Responsive ── */
+  @media(max-width:480px) {
+    .row-2 { grid-template-columns: 1fr; }
+    .result-grid.cols3 { grid-template-columns: 1fr 1fr; }
+    .equip-grid { grid-template-columns: 1fr 1fr; }
+  }
+</style>
+</head>
+<body>
+
+<!-- ═══════════════════ TAB BAR ═══════════════════ -->
+<div class="tab-bar">
+  <button class="tab-btn active" onclick="showTab('app')">
+    <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M14.7 6.3a1 1 0 000 1.4l1.6 1.6a1 1 0 001.4 0l3.77-3.77a6 6 0 01-7.94 7.94l-6.91 6.91a2.12 2.12 0 01-3-3l6.91-6.91a6 6 0 017.94-7.94l-3.76 3.76z"/></svg>
+    Aplicação
+  </button>
+  <button class="tab-btn" onclick="showTab('calc')">
+    <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><rect x="4" y="2" width="16" height="20" rx="2"/><line x1="8" y1="8" x2="16" y2="8"/><line x1="8" y1="12" x2="16" y2="12"/><line x1="8" y1="16" x2="12" y2="16"/></svg>
+    Cálculo
+  </button>
+  <button class="tab-btn" onclick="showTab('verif')">
+    <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><polyline points="20 6 9 17 4 12"/></svg>
+    Verificação
+  </button>
+  <button class="tab-btn" onclick="showTab('iso')">
+    <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="11" cy="11" r="8"/><line x1="21" y1="21" x2="16.65" y2="16.65"/></svg>
+    ISO
+  </button>
+  <button class="tab-btn" onclick="showTab('hist')">
+    <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="12" cy="12" r="10"/><polyline points="12 6 12 12 16 14"/></svg>
+    Histórico
+  </button>
+</div>
+
+<!-- ═══════════════════ SCREEN: APLICAÇÃO ═══════════════════ -->
+<div id="screen-app" class="screen active">
+  <h1>Modo 3 — Seleção por Aplicação</h1>
+  <p class="sub">Escolha o equipamento para receber recomendação de ajuste</p>
+
+  <div class="field">
+    <label>Diâmetro Nominal (mm)</label>
+    <input type="number" id="app-nominal" placeholder="Ex: 50" min="0.001" max="500" step="any">
+  </div>
+
+  <div class="section-label">Equipamento</div>
+  <div class="equip-grid" id="equip-grid"></div>
+
+  <div id="config-section" style="display:none">
+    <div class="section-label">Configuração / Ponto de Montagem</div>
+    <div id="config-list"></div>
+  </div>
+
+  <button class="btn btn-primary" id="app-calc-btn" onclick="calcApplication()" style="display:none">CALCULAR RECOMENDAÇÃO</button>
+  <div class="error-msg" id="app-error"></div>
+  <div id="app-result"></div>
+</div>
+
+<!-- ═══════════════════ SCREEN: CÁLCULO ═══════════════════ -->
+<div id="screen-calc" class="screen">
+  <h1>Modo 1 — Cálculo ISO</h1>
+  <p class="sub">Calcule os limites de furo e eixo pelo ajuste ISO 286</p>
+
+  <div class="field">
+    <label>Diâmetro Nominal (mm)</label>
+    <input type="number" id="calc-nominal" placeholder="Ex: 50" min="0.001" max="500" step="any">
+    <span class="hint">Faixa válida: 0 a 500 mm</span>
+  </div>
+
+  <div class="row-2">
+    <div class="field">
+      <label>Furo</label>
+      <input type="text" id="calc-hole" placeholder="H7" maxlength="5" oninput="this.value=this.value.toUpperCase()">
+      <span class="hint">Ex: H7, G6, F8</span>
+    </div>
+    <div class="field">
+      <label>Eixo</label>
+      <input type="text" id="calc-shaft" placeholder="k6" maxlength="5" oninput="this.value=this.value.toLowerCase()">
+      <span class="hint">Ex: k6, p6, h6, g6</span>
+    </div>
+  </div>
+
+  <div class="section-label">Ajustes rápidos</div>
+  <div class="chips" id="calc-chips"></div>
+
+  <button class="btn btn-primary" onclick="calcISO()">CALCULAR</button>
+  <div class="error-msg" id="calc-error"></div>
+  <div id="calc-result"></div>
+</div>
+
+<!-- ═══════════════════ SCREEN: VERIFICAÇÃO ═══════════════════ -->
+<div id="screen-verif" class="screen">
+  <h1>Modo 2 — Verificação</h1>
+  <p class="sub">Confira se as peças medidas estão dentro da tolerância</p>
+
+  <div class="field">
+    <label>Diâmetro Nominal (mm)</label>
+    <input type="number" id="v-nominal" placeholder="Ex: 50" step="any">
+  </div>
+
+  <div class="row-2">
+    <div class="field">
+      <label>Furo (ajuste)</label>
+      <input type="text" id="v-hole" placeholder="H7" oninput="this.value=this.value.toUpperCase()">
+    </div>
+    <div class="field">
+      <label>Eixo (ajuste)</label>
+      <input type="text" id="v-shaft" placeholder="k6" oninput="this.value=this.value.toLowerCase()">
+    </div>
+  </div>
+
+  <div class="section-label">Dimensões Reais Medidas</div>
+  <div class="row-2">
+    <div class="field">
+      <label>Furo Mín. (mm)</label>
+      <input type="number" id="v-hmin" placeholder="50.0000" step="any">
+    </div>
+    <div class="field">
+      <label>Furo Máx. (mm)</label>
+      <input type="number" id="v-hmax" placeholder="50.0210" step="any">
+    </div>
+  </div>
+  <div class="row-2">
+    <div class="field">
+      <label>Eixo Mín. (mm)</label>
+      <input type="number" id="v-smin" placeholder="50.0020" step="any">
+    </div>
+    <div class="field">
+      <label>Eixo Máx. (mm)</label>
+      <input type="number" id="v-smax" placeholder="50.0180" step="any">
+    </div>
+  </div>
+
+  <button class="btn btn-primary" onclick="verifyDims()">VERIFICAR</button>
+  <div class="error-msg" id="v-error"></div>
+  <div id="v-result"></div>
+</div>
+
+<!-- ═══════════════════ SCREEN: ISO ═══════════════════ -->
+<div id="screen-iso" class="screen">
+  <h1>Modo 4 — Norma ISO 286</h1>
+  <p class="sub">Compare seu padrão interno com a norma ISO</p>
+
+  <div class="mode-toggle">
+    <button class="mode-btn active" id="iso-mode-compare" onclick="setISOMode('compare')">Comparar com ISO</button>
+    <button class="mode-btn" id="iso-mode-find" onclick="setISOMode('find')">Encontrar equivalente</button>
+  </div>
+
+  <div class="field">
+    <label>Diâmetro Nominal (mm)</label>
+    <input type="number" id="iso-nominal" placeholder="Ex: 50" step="any">
+  </div>
+
+  <div class="section-label">Padrão interno — Faixa de Folga/Interferência (μm)</div>
+  <p class="hint" style="margin-bottom:8px">Positivo = folga &nbsp;|&nbsp; Negativo = interferência</p>
+  <div class="row-2">
+    <div class="field">
+      <label>Mínimo (μm)</label>
+      <input type="number" id="iso-intmin" placeholder="Ex: -40" step="any">
+    </div>
+    <div class="field">
+      <label>Máximo (μm)</label>
+      <input type="number" id="iso-intmax" placeholder="Ex: -5" step="any">
+    </div>
+  </div>
+
+  <div id="iso-compare-section">
+    <div class="section-label">Ajuste ISO para comparar</div>
+    <div class="chips" id="iso-chips"></div>
+  </div>
+
+  <button class="btn btn-primary" onclick="calcISOCompare()">ANALISAR</button>
+  <div class="error-msg" id="iso-error"></div>
+  <div id="iso-result"></div>
+</div>
+
+<!-- ═══════════════════ SCREEN: HISTÓRICO ═══════════════════ -->
+<div id="screen-hist" class="screen">
+  <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:4px">
+    <h1>Histórico</h1>
+    <button class="btn-red btn" style="width:auto;padding:8px 16px;font-size:13px" onclick="clearAll()">Limpar tudo</button>
+  </div>
+  <p class="sub" id="hist-count"></p>
+  <div id="hist-list"></div>
+</div>
+
+<script>
+const RANGES = [
+  {min:0,   max:3,   label:'0–3 mm'},
+  {min:3,   max:6,   label:'3–6 mm'},
+  {min:6,   max:10,  label:'6–10 mm'},
+  {min:10,  max:18,  label:'10–18 mm'},
+  {min:18,  max:30,  label:'18–30 mm'},
+  {min:30,  max:50,  label:'30–50 mm'},
+  {min:50,  max:80,  label:'50–80 mm'},
+  {min:80,  max:120, label:'80–120 mm'},
+  {min:120, max:180, label:'120–180 mm'},
+  {min:180, max:250, label:'180–250 mm'},
+  {min:250, max:315, label:'250–315 mm'},
+  {min:315, max:400, label:'315–400 mm'},
+  {min:400, max:500, label:'400–500 mm'},
+];
+
+const IT = {
+  IT5:  [4,  5,  6,  8,  9,  11, 13, 15, 18, 20, 23, 25, 27],
+  IT6:  [6,  8,  9,  11, 13, 16, 19, 22, 25, 29, 32, 36, 40],
+  IT7:  [10, 12, 15, 18, 21, 25, 30, 35, 40, 46, 52, 57, 63],
+  IT8:  [14, 18, 22, 27, 33, 39, 46, 54, 63, 72, 81, 89, 97],
+  IT9:  [25, 30, 36, 43, 52, 62, 74, 87,100,115,130,140,155],
+  IT10: [40, 48, 58, 70, 84,100,120,140,160,185,210,230,250],
+  IT11: [60, 75, 90,110,130,160,190,220,250,290,320,360,400],
+};
+
+const HOLE_FD = {
+  H:  {type:'EI', v:[0,0,0,0,0,0,0,0,0,0,0,0,0]},
+  JS: {type:'SYM'},
+  G:  {type:'EI', v:[2,4,5,6,7,9,10,12,14,15,17,18,20]},
+  F:  {type:'EI', v:[6,10,13,16,20,25,30,36,43,50,56,62,68]},
+  E:  {type:'EI', v:[14,20,25,32,40,50,60,72,85,100,110,125,135]},
+  D:  {type:'EI', v:[20,30,40,50,65,80,100,120,145,170,190,210,230]},
+  N:  {type:'ES_neg', v:[4,4,4,5,5,6,6,7,8,9,9,10,10]},
+  P:  {type:'ES_neg', v:[6,8,10,12,15,18,22,26,32,37,43,50,55]},
+  K:  {type:'ES_neg', v:[0,3,5,6,6,7,7,9,9,10,12,13,14]},
+};
+
+const SHAFT_FD = {
+  f:  {type:'es', v:[-6,-10,-13,-16,-20,-25,-30,-36,-43,-50,-56,-62,-68]},
+  g:  {type:'es', v:[-2,-4,-5,-6,-7,-9,-10,-12,-14,-15,-17,-18,-20]},
+  h:  {type:'es', v:[0,0,0,0,0,0,0,0,0,0,0,0,0]},
+  js: {type:'SYM'},
+  k:  {type:'ei', v:[0,1,1,1,2,2,2,3,3,4,4,4,5]},
+  m:  {type:'ei', v:[2,4,6,7,8,9,11,13,15,17,20,21,23]},
+  n:  {type:'ei', v:[4,8,10,12,15,17,20,23,27,31,34,37,40]},
+  p:  {type:'ei', v:[6,12,15,18,22,26,32,37,43,50,56,62,68]},
+  r:  {type:'ei', v:[10,15,19,23,28,34,41,48,58,68,78,87,95]},
+  s:  {type:'ei', v:[14,19,23,28,35,43,53,59,71,79,92,100,108]},
+  u:  {type:'ei', v:[18,23,28,33,41,48,60,70,87,102,120,140,165]},
+};
+
+const COMMON_FITS = {
+  'H7/f7': {type:'FOLGA',         desc:'Folga ampla — deslizamento livre',           cls:'clearance'},
+  'H7/g6': {type:'FOLGA',         desc:'Folga pequena — deslizamento preciso',        cls:'clearance'},
+  'H7/h6': {type:'FOLGA',         desc:'Folga mínima — ajuste deslizante',            cls:'clearance'},
+  'H7/js6':{type:'TRANSIÇÃO',     desc:'Transição simétrica',                         cls:'transition'},
+  'H7/k6': {type:'TRANSIÇÃO',     desc:'Transição leve — raramente interferência',    cls:'transition'},
+  'H7/m6': {type:'TRANSIÇÃO',     desc:'Transição média',                             cls:'transition'},
+  'H7/n6': {type:'TRANSIÇÃO',     desc:'Transição firme',                             cls:'transition'},
+  'H7/p6': {type:'INTERFERÊNCIA', desc:'Pressão leve — desmontagem possível',         cls:'interference'},
+  'H7/r6': {type:'INTERFERÊNCIA', desc:'Pressão média — desmontagem difícil',         cls:'interference'},
+  'H7/s6': {type:'INTERFERÊNCIA', desc:'Pressão forte — desmontagem destrutiva',      cls:'interference'},
+  'H7/u6': {type:'INTERFERÊNCIA', desc:'Interferência máxima — fixação permanente',   cls:'interference'},
+};
+
+const APP_DB = {
+  redutor: { name:'Redutor / Caixa de Engrenagens', icon:'⚙️', configs:{
+    eixo_engrenagem: {fits:['H7/k6','H7/m6'], desc:'Eixo–engrenagem',                 minI:10, maxI:40},
+    eixo_rolamento:  {fits:['H7/k6','H7/m6'], desc:'Eixo–rolamento (anel interno)',    minI:5,  maxI:25},
+    caixa_rolamento: {fits:['H7/h6','H7/js6'],desc:'Caixa–rolamento (anel externo)',   minI:-10,maxI:10},
+    eixo_cubo:       {fits:['H7/p6','H7/r6'], desc:'Eixo–cubo / chaveta (fixo)',       minI:20, maxI:60},
+  }},
+  bomba: { name:'Bomba Hidráulica / Centrífuga', icon:'💧', configs:{
+    eixo_selo:       {fits:['H7/g6','H7/h6'], desc:'Eixo–selo mecânico',               minI:-25,maxI:0},
+    eixo_impulsor:   {fits:['H7/k6','H7/p6'], desc:'Eixo–impulsor',                    minI:10, maxI:50},
+    eixo_rolamento:  {fits:['H7/k6','H7/m6'], desc:'Eixo–rolamento',                   minI:5,  maxI:25},
+    carcaca_mancal:  {fits:['H7/h6','H7/js6'],desc:'Carcaça–mancal',                   minI:-15,maxI:15},
+  }},
+  mancal: { name:'Mancal de Rolamento', icon:'🔩', configs:{
+    leve_rot:        {fits:['H7/js6','H7/k6'],desc:'Carga leve, anel interno rotativo', minI:0,  maxI:18},
+    medio_rot:       {fits:['H7/k6','H7/m6'], desc:'Carga média, anel interno rotativo',minI:5,  maxI:30},
+    pesado_rot:      {fits:['H7/m6','H7/n6'], desc:'Carga pesada, anel interno rotativo',minI:13,maxI:45},
+    anel_ext:        {fits:['H7/h6','H7/js6'],desc:'Anel externo (carga estacionária)', minI:-20,maxI:10},
+  }},
+  acoplamento: { name:'Acoplamento / Cubo', icon:'🔗', configs:{
+    leve:            {fits:['H7/h6','H7/k6'], desc:'Acoplamento desmontável leve',      minI:-15,maxI:15},
+    medio:           {fits:['H7/m6','H7/n6'], desc:'Acoplamento semipermanente',         minI:8,  maxI:35},
+    pesado:          {fits:['H7/p6','H7/s6'], desc:'Acoplamento permanente (prensa)',    minI:25, maxI:80},
+  }},
+  engrenagem: { name:'Engrenagem / Pinhão', icon:'🦷', configs:{
+    intercambivel:   {fits:['H7/h6','H7/js6'],desc:'Montagem intercambiável',            minI:-20,maxI:10},
+    fixo_leve:       {fits:['H7/k6','H7/m6'], desc:'Fixo, torque leve',                 minI:5,  maxI:25},
+    fixo_pesado:     {fits:['H7/p6','H7/r6'], desc:'Fixo, torque elevado',              minI:20, maxI:60},
+  }},
+};
+
+function getRangeIdx(d) {
+  for(let i=0;i<RANGES.length;i++) {
+    const r=RANGES[i];
+    if((d>r.min||i===0)&&d<=r.max) return i;
+  }
+  return -1;
+}
+
+function parseDesig(s) {
+  const m = s.match(/^([A-Za-z]+)(\d+)$/);
+  if(!m) return null;
+  return {letter:m[1], grade:`IT${m[2]}`};
+}
+
+function getHoleLimits(nominal, desig) {
+  const ri = getRangeIdx(nominal);
+  if(ri<0) return null;
+  const p = parseDesig(desig);
+  if(!p) return null;
+  const itVal = IT[p.grade]?.[ri];
+  if(itVal===undefined) return null;
+  const hfd = HOLE_FD[p.letter.toUpperCase()];
+  if(!hfd) return null;
+  let EI, ES;
+  if(hfd.type==='EI')     { EI=hfd.v[ri]; ES=EI+itVal; }
+  else if(hfd.type==='ES_neg') { ES=-hfd.v[ri]; EI=ES-itVal; }
+  else if(hfd.type==='SYM')   { EI=-Math.floor(itVal/2); ES=EI+itVal; }
+  return {EI,ES,IT:itVal,ri,minD:nominal+EI/1000,maxD:nominal+ES/1000,desig,nominal};
+}
+
+function getShaftLimits(nominal, desig) {
+  const ri = getRangeIdx(nominal);
+  if(ri<0) return null;
+  const p = parseDesig(desig);
+  if(!p) return null;
+  const itVal = IT[p.grade]?.[ri];
+  if(itVal===undefined) return null;
+  const sfd = SHAFT_FD[p.letter.toLowerCase()];
+  if(!sfd) return null;
+  let ei, es;
+  if(sfd.type==='es')  { es=sfd.v[ri]; ei=es-itVal; }
+  else if(sfd.type==='ei')  { ei=sfd.v[ri]; es=ei+itVal; }
+  else if(sfd.type==='SYM') { ei=-Math.floor(itVal/2); es=ei+itVal; }
+  return {ei,es,IT:itVal,ri,minD:nominal+ei/1000,maxD:nominal+es/1000,desig,nominal};
+}
+
+function calcFitResult(hole, shaft) {
+  const maxC = hole.ES - shaft.ei;
+  const minC = hole.EI - shaft.es;
+  const isClearance    = minC>0 && maxC>0;
+  const isInterference = minC<0 && maxC<0;
+  const isTransition   = !isClearance && !isInterference;
+  return {maxC,minC,isClearance,isInterference,isTransition,
+    type: isInterference?'INTERFERÊNCIA':isClearance?'FOLGA':'TRANSIÇÃO'};
+}
+
+function fmtDev(um) {
+  const mm=um/1000; return (mm>=0?'+':'')+mm.toFixed(3);
+}
+function fmtD(nom,um) { return (nom+um/1000).toFixed(4); }
+
+function compatStatus(pct) {
+  if(pct>=80) return {label:'✔ Compatível',       color:'#2E7D32'};
+  if(pct>=40) return {label:'⚠️ Parcialmente',    color:'#E65100'};
+  return             {label:'❌ Não compatível',   color:'#C62828'};
+}
+
+function findBestISO(nominal, tMin, tMax) {
+  const res = [];
+  for(const [fitName, fitInfo] of Object.entries(COMMON_FITS)) {
+    const [hd,sd]=fitName.split('/');
+    const hole=getHoleLimits(nominal,hd);
+    const shaft=getShaftLimits(nominal,sd);
+    if(!hole||!shaft) continue;
+    const f=calcFitResult(hole,shaft);
+    const iMin=f.minC, iMax=f.maxC;
+    const ovMin=Math.max(iMin,tMin), ovMax=Math.min(iMax,tMax);
+    const overlap=Math.max(0,ovMax-ovMin);
+    const rangeT=tMax-tMin, rangeI=iMax-iMin;
+    const compat=rangeT>0?Math.round(overlap/Math.max(rangeT,rangeI)*100):0;
+    res.push({fitName,fitInfo,iMin,iMax,compat,hole,shaft,f});
+  }
+  return res.sort((a,b)=>b.compat-a.compat);
+}
+
+function showTab(name) {
+  document.querySelectorAll('.screen').forEach(s=>s.classList.remove('active'));
+  document.querySelectorAll('.tab-btn').forEach(b=>b.classList.remove('active'));
+  document.getElementById('screen-'+name).classList.add('active');
+  const tabs=['app','calc','verif','iso','hist'];
+  document.querySelectorAll('.tab-btn')[tabs.indexOf(name)].classList.add('active');
+  if(name==='hist') renderHistory();
+}
+
+let calcSelectedFit = 'H7/k6';
+(function initCalcChips() {
+  const container=document.getElementById('calc-chips');
+  Object.keys(COMMON_FITS).forEach(fit=>{
+    const chip=document.createElement('span');
+    chip.className='chip'+(fit===calcSelectedFit?' selected':'');
+    chip.textContent=fit;
+    chip.onclick=()=>{
+      calcSelectedFit=fit;
+      document.querySelectorAll('#calc-chips .chip').forEach(c=>c.classList.remove('selected'));
+      chip.classList.add('selected');
+      const [h,s]=fit.split('/');
+      document.getElementById('calc-hole').value=h;
+      document.getElementById('calc-shaft').value=s;
+    };
+    container.appendChild(chip);
+  });
+  const [h,s]=calcSelectedFit.split('/');
+  document.getElementById('calc-hole').value=h;
+  document.getElementById('calc-shaft').value=s;
+})();
+
+function calcISO() {
+  const err=document.getElementById('calc-error');
+  const out=document.getElementById('calc-result');
+  err.textContent=''; out.innerHTML='';
+
+  const d=parseFloat(document.getElementById('calc-nominal').value);
+  const hd=document.getElementById('calc-hole').value.trim();
+  const sd=document.getElementById('calc-shaft').value.trim();
+
+  if(isNaN(d)||d<=0||d>500){err.textContent='Diâmetro inválido (0–500 mm)';return;}
+  const hole=getHoleLimits(d,hd);
+  const shaft=getShaftLimits(d,sd);
+  if(!hole||!shaft){err.textContent='Designação inválida. Ex: H7 / k6';return;}
+
+  const fit=calcFitResult(hole,shaft);
+  const fitColor=fit.isClearance?'#1565C0':fit.isInterference?'#B71C1C':'#E65100';
+  const fitInfo=COMMON_FITS[`${hd}/${sd}`];
+
+  let fitDetails='';
+  if(fit.isClearance) {
+    fitDetails=`
+      <div class="res-cell"><div class="lbl">Folga mínima</div><div class="val">${fit.minC} μm</div></div>
+      <div class="res-cell"><div class="lbl">Folga máxima</div><div class="val">${fit.maxC} μm</div></div>
+    `;
+    if(fit.minC<5) fitDetails+=`<div class="alert alert-warn" style="grid-column:1/-1">⚠️ Folga muito pequena — risco de gripagem</div>`;
+  } else if(fit.isInterference) {
+    fitDetails=`
+      <div class="res-cell"><div class="lbl">Interferência mín.</div><div class="val">${-fit.maxC} μm</div></div>
+      <div class="res-cell"><div class="lbl">Interferência máx.</div><div class="val">${-fit.minC} μm</div></div>
+    `;
+    if(-fit.maxC<5) fitDetails+=`<div class="alert alert-warn" style="grid-column:1/-1">⚠️ Interferência mínima insuficiente</div>`;
+  } else {
+    fitDetails=`
+      <div class="res-cell"><div class="lbl">Pode ser folga (máx)</div><div class="val">${fit.maxC} μm</div></div>
+      <div class="res-cell"><div class="lbl">Pode ser interf. (máx)</div><div class="val">${-fit.minC} μm</div></div>
+    `;
+  }
+
+  out.innerHTML=`
+    <div class="card" style="border-color:${fitColor}">
+      <div class="card-title" style="color:${fitColor}">Ajuste ${hd}/${sd}</div>
+      <span class="badge" style="background:${fitColor}">${fit.type}</span>
+      ${fitInfo?`<p style="font-size:13px;color:#546E7A;margin-top:4px">${fitInfo.desc}</p>`:''}
+    </div>
+
+    <div class="card" style="border-color:#1565C0">
+      <div class="card-title" style="color:#1565C0">Furo — ${hd}</div>
+      <div class="result-grid">
+        <div class="res-cell"><div class="lbl">Desvio Inferior (EI)</div><div class="val">${fmtDev(hole.EI)} mm</div></div>
+        <div class="res-cell"><div class="lbl">Desvio Superior (ES)</div><div class="val">${fmtDev(hole.ES)} mm</div></div>
+      </div>
+      <hr class="divider">
+      <div class="result-grid">
+        <div class="res-cell"><div class="lbl">Ø Mínimo</div><div class="val" style="color:#1565C0">${fmtD(d,hole.EI)}</div><div class="sub-val">mm</div></div>
+        <div class="res-cell"><div class="lbl">Ø Máximo</div><div class="val" style="color:#1565C0">${fmtD(d,hole.ES)}</div><div class="sub-val">mm</div></div>
+      </div>
+      <p style="font-size:11px;color:#90A4AE;margin-top:8px">Tolerância IT = ${hole.IT} μm &nbsp;|&nbsp; ${RANGES[hole.ri].label}</p>
+    </div>
+
+    <div class="card" style="border-color:#6A1B9A">
+      <div class="card-title" style="color:#6A1B9A">Eixo — ${sd}</div>
+      <div class="result-grid">
+        <div class="res-cell"><div class="lbl">Desvio Inferior (ei)</div><div class="val">${fmtDev(shaft.ei)} mm</div></div>
+        <div class="res-cell"><div class="lbl">Desvio Superior (es)</div><div class="val">${fmtDev(shaft.es)} mm</div></div>
+      </div>
+      <hr class="divider">
+      <div class="result-grid">
+        <div class="res-cell"><div class="lbl">Ø Mínimo</div><div class="val" style="color:#6A1B9A">${fmtD(d,shaft.ei)}</div><div class="sub-val">mm</div></div>
+        <div class="res-cell"><div class="lbl">Ø Máximo</div><div class="val" style="color:#6A1B9A">${fmtD(d,shaft.es)}</div><div class="sub-val">mm</div></div>
+      </div>
+      <p style="font-size:11px;color:#90A4AE;margin-top:8px">Tolerância IT = ${shaft.IT} μm</p>
+    </div>
+
+    <div class="card" style="border-color:${fitColor}">
+      <div class="card-title" style="color:${fitColor}">Folga / Interferência</div>
+      <div class="result-grid">${fitDetails}</div>
+    </div>
+
+    <button class="btn btn-green" onclick="saveEntry({mode:'CÁLCULO ISO',nominal:${d},fit:'${hd}/${sd}',fitType:'${fit.type}',holeMin:'${fmtD(d,hole.EI)}',holeMax:'${fmtD(d,hole.ES)}',shaftMin:'${fmtD(d,shaft.ei)}',shaftMax:'${fmtD(d,shaft.es)}',maxClearance:${fit.maxC},minClearance:${fit.minC}})">💾 SALVAR NO HISTÓRICO</button>
+  `;
+}
+
+function verifyDims() {
+  const err=document.getElementById('v-error');
+  const out=document.getElementById('v-result');
+  err.textContent=''; out.innerHTML='';
+
+  const d=parseFloat(document.getElementById('v-nominal').value);
+  const hd=document.getElementById('v-hole').value.trim();
+  const sd=document.getElementById('v-shaft').value.trim();
+  const hMin=parseFloat(document.getElementById('v-hmin').value);
+  const hMax=parseFloat(document.getElementById('v-hmax').value);
+  const sMin=parseFloat(document.getElementById('v-smin').value);
+  const sMax=parseFloat(document.getElementById('v-smax').value);
+
+  if([d,hMin,hMax,sMin,sMax].some(v=>isNaN(v))){err.textContent='Preencha todos os campos';return;}
+  if(hMin>hMax){err.textContent='Furo: mín deve ser ≤ máx';return;}
+  if(sMin>sMax){err.textContent='Eixo: mín deve ser ≤ máx';return;}
+
+  const hole=getHoleLimits(d,hd);
+  const shaft=getShaftLimits(d,sd);
+  if(!hole||!shaft){err.textContent='Designação de ajuste inválida';return;}
+
+  const eps=0.00001;
+  const hOK=hMin>=hole.minD-eps && hMax<=hole.maxD+eps;
+  const sOK=sMin>=shaft.minD-eps && sMax<=shaft.maxD+eps;
+  const overall=hOK&&sOK;
+
+  const actMaxC=(hMax-sMin)*1000;
+  const actMinC=(hMin-sMax)*1000;
+
+  const hDev_EI=(hMin-d)*1000, hDev_ES=(hMax-d)*1000;
+  const sDev_ei=(sMin-d)*1000, sDev_es=(sMax-d)*1000;
+
+  const clr=overall?'#2E7D32':'#C62828';
+
+  function fmtActual(v) {
+    if(v>0) return `${v.toFixed(1)} μm (folga)`;
+    return `${(-v).toFixed(1)} μm (interferência)`;
+  }
+
+  out.innerHTML=`
+    <div class="card" style="border-color:${clr}">
+      <div class="badge-big" style="background:${clr}">${overall?'✔  APROVADO':'✘  REPROVADO'}</div>
+    </div>
+
+    <div class="card" style="border-color:${hOK?'#1565C0':'#C62828'}">
+      <div class="card-title" style="color:${hOK?'#1565C0':'#C62828'}">Furo — ${hd}</div>
+      <span class="badge" style="background:${hOK?'#2E7D32':'#C62828'}">${hOK?'✔ OK':'✘ NOK'}</span>
+      <div class="result-grid cols3" style="margin-top:10px">
+        <div class="res-cell"><div class="lbl">Limite mín. ISO</div><div class="val">${hole.minD.toFixed(4)}</div><div class="sub-val">${fmtDev(hole.EI)} mm</div></div>
+        <div class="res-cell"><div class="lbl">Real medido</div><div class="val" style="color:${hOK?'#1565C0':'#C62828'}">${hMin.toFixed(4)}–${hMax.toFixed(4)}</div><div class="sub-val">${fmtDev(hDev_EI)} / ${fmtDev(hDev_ES)}</div></div>
+        <div class="res-cell"><div class="lbl">Limite máx. ISO</div><div class="val">${hole.maxD.toFixed(4)}</div><div class="sub-val">${fmtDev(hole.ES)} mm</div></div>
+      </div>
+    </div>
+
+    <div class="card" style="border-color:${sOK?'#6A1B9A':'#C62828'}">
+      <div class="card-title" style="color:${sOK?'#6A1B9A':'#C62828'}">Eixo — ${sd}</div>
+      <span class="badge" style="background:${sOK?'#2E7D32':'#C62828'}">${sOK?'✔ OK':'✘ NOK'}</span>
+      <div class="result-grid cols3" style="margin-top:10px">
+        <div class="res-cell"><div class="lbl">Limite mín. ISO</div><div class="val">${shaft.minD.toFixed(4)}</div><div class="sub-val">${fmtDev(shaft.ei)} mm</div></div>
+        <div class="res-cell"><div class="lbl">Real medido</div><div class="val" style="color:${sOK?'#6A1B9A':'#C62828'}">${sMin.toFixed(4)}–${sMax.toFixed(4)}</div><div class="sub-val">${fmtDev(sDev_ei)} / ${fmtDev(sDev_es)}</div></div>
+        <div class="res-cell"><div class="lbl">Limite máx. ISO</div><div class="val">${shaft.maxD.toFixed(4)}</div><div class="sub-val">${fmtDev(shaft.es)} mm</div></div>
+      </div>
+    </div>
+
+    <div class="card" style="border-color:#546E7A">
+      <div class="card-title" style="color:#546E7A">Folga / Interferência Real</div>
+      <div class="result-grid">
+        <div class="res-cell"><div class="lbl">Máximo</div><div class="val">${fmtActual(actMaxC)}</div></div>
+        <div class="res-cell"><div class="lbl">Mínimo</div><div class="val">${fmtActual(actMinC)}</div></div>
+      </div>
+    </div>
+
+    <button class="btn btn-green" onclick="saveEntry({mode:'VERIFICAÇÃO',nominal:${d},fit:'${hd}/${sd}',status:'${overall?'OK':'NOK'}',holeOK:${hOK},shaftOK:${sOK},actualMaxC:'${fmtActual(actMaxC)}',actualMinC:'${fmtActual(actMinC)}'})">💾 SALVAR NO HISTÓRICO</button>
+  `;
+}
+
+let selEquip=null, selConfig=null;
+
+(function initEquipGrid() {
+  const g=document.getElementById('equip-grid');
+  Object.entries(APP_DB).forEach(([key,eq])=>{
+    const card=document.createElement('div');
+    card.className='equip-card';
+    card.id='equip-'+key;
+    card.innerHTML=`<div class="icon">${eq.icon}</div><div class="name">${eq.name}</div>`;
+    card.onclick=()=>selectEquip(key);
+    g.appendChild(card);
+  });
+})();
+
+function selectEquip(key) {
+  selEquip=key; selConfig=null;
+  document.querySelectorAll('.equip-card').forEach(c=>c.classList.remove('selected'));
+  document.getElementById('equip-'+key).classList.add('selected');
+  const eq=APP_DB[key];
+  const cs=document.getElementById('config-section');
+  const cl=document.getElementById('config-list');
+  cs.style.display='block'; cl.innerHTML='';
+  Object.entries(eq.configs).forEach(([ck,cfg])=>{
+    const item=document.createElement('div');
+    item.className='config-item';
+    item.id='cfg-'+ck;
+    item.innerHTML=`
+      <div class="config-dot" id="dot-${ck}"></div>
+      <div>
+        <div class="config-desc">${cfg.desc}</div>
+        <div class="config-sub">Ajustes: ${cfg.fits.join(', ')} &nbsp;|&nbsp; Int: ${cfg.minI} a ${cfg.maxI} μm</div>
+      </div>`;
+    item.onclick=()=>selectConfig(ck);
+    cl.appendChild(item);
+  });
+  document.getElementById('app-calc-btn').style.display='none';
+  document.getElementById('app-result').innerHTML='';
+}
+
+function selectConfig(ck) {
+  selConfig=ck;
+  document.querySelectorAll('.config-item').forEach(i=>i.classList.remove('selected'));
+  document.getElementById('cfg-'+ck).classList.add('selected');
+  document.getElementById('app-calc-btn').style.display='block';
+}
+
+function calcApplication() {
+  const err=document.getElementById('app-error');
+  const out=document.getElementById('app-result');
+  err.textContent=''; out.innerHTML='';
+
+  const d=parseFloat(document.getElementById('app-nominal').value);
+  if(isNaN(d)||d<=0||d>500){err.textContent='Diâmetro inválido (0–500 mm)';return;}
+  if(!selEquip||!selConfig){err.textContent='Selecione equipamento e configuração';return;}
+
+  const eq=APP_DB[selEquip];
+  const cfg=eq.configs[selConfig];
+
+  let html=`
+    <div class="card" style="border-color:#1565C0">
+      <div class="card-title" style="color:#1565C0">Recomendação — ${eq.name}</div>
+      <p style="font-size:14px;font-weight:600;margin-bottom:8px">${cfg.desc}</p>
+      <div style="background:#E3F2FD;border-radius:6px;padding:10px">
+        <div style="font-size:11px;color:#1565C0;font-weight:600">Faixa de interferência recomendada</div>
+        <div style="font-size:22px;font-weight:800;color:#1565C0">${cfg.minI} μm &nbsp;a&nbsp; ${cfg.maxI} μm</div>
+        ${cfg.minI<0?'<div style="font-size:11px;color:#546E7A">(valores negativos = folga admissível)</div>':''}
+      </div>
+    </div>`;
+
+  cfg.fits.forEach(fitName=>{
+    const [hd,sd]=fitName.split('/');
+    const hole=getHoleLimits(d,hd);
+    const shaft=getShaftLimits(d,sd);
+    if(!hole||!shaft) return;
+    const f=calcFitResult(hole,shaft);
+    const fitInfo=COMMON_FITS[fitName];
+    const color=f.isClearance?'#1565C0':f.isInterference?'#B71C1C':'#E65100';
+
+    const intMin=f.isInterference?-f.maxC:0;
+    const inRange=intMin>=cfg.minI && intMin<=cfg.maxI;
+
+    let resultStr='';
+    if(f.isClearance)    resultStr=`Folga: ${f.minC} a ${f.maxC} μm`;
+    else if(f.isInterference) resultStr=`Interf.: ${-f.maxC} a ${-f.minC} μm`;
+    else                 resultStr=`Transição: ±${Math.max(f.maxC,-f.minC)} μm`;
+
+    html+=`
+      <div class="card" style="border-color:${color}">
+        <div class="card-title" style="color:${color}">Ajuste ${fitName}</div>
+        <span class="badge" style="background:${color}">${f.type}</span>
+        <p style="font-size:12px;color:#546E7A;margin:4px 0 10px">${fitInfo?.desc||''}</p>
+        <div class="result-grid cols3">
+          <div class="res-cell">
+            <div class="lbl">Furo ${hd}</div>
+            <div class="val" style="font-size:13px">${fmtD(d,hole.EI)}</div>
+            <div class="val" style="font-size:13px">${fmtD(d,hole.ES)}</div>
+            <div class="sub-val">${fmtDev(hole.EI)} / ${fmtDev(hole.ES)}</div>
+          </div>
+          <div class="res-cell">
+            <div class="lbl">Eixo ${sd}</div>
+            <div class="val" style="font-size:13px">${fmtD(d,shaft.ei)}</div>
+            <div class="val" style="font-size:13px">${fmtD(d,shaft.es)}</div>
+            <div class="sub-val">${fmtDev(shaft.ei)} / ${fmtDev(shaft.es)}</div>
+          </div>
+          <div class="res-cell">
+            <div class="lbl">Resultado</div>
+            <div class="val" style="font-size:13px;color:${color}">${resultStr}</div>
+          </div>
+        </div>
+        <div class="alert ${inRange?'alert-ok':'alert-warn'}" style="margin-top:8px">
+          ${inRange?'✔ Dentro da faixa recomendada':'⚠️ Verificar adequação à aplicação'}
+        </div>
+      </div>`;
+  });
+
+  html+=`<button class="btn btn-green" onclick="saveEntry({mode:'SELEÇÃO POR APLICAÇÃO',nominal:${d},equipment:'${eq.name}',config:'${cfg.desc}',suggestedFits:'${cfg.fits.join(', ')}',recommendedIntMin:${cfg.minI},recommendedIntMax:${cfg.maxI}})">💾 SALVAR NO HISTÓRICO</button>`;
+  out.innerHTML=html;
+}
+
+let isoMode='compare', isoSelectedFit='H7/k6';
+
+(function initISOChips() {
+  const c=document.getElementById('iso-chips');
+  Object.keys(COMMON_FITS).forEach(fit=>{
+    const chip=document.createElement('span');
+    chip.className='chip'+(fit===isoSelectedFit?' selected':'');
+    chip.textContent=fit;
+    chip.onclick=()=>{
+      isoSelectedFit=fit;
+      document.querySelectorAll('#iso-chips .chip').forEach(c=>c.classList.remove('selected'));
+      chip.classList.add('selected');
+    };
+    c.appendChild(chip);
+  });
+})();
+
+function setISOMode(m) {
+  isoMode=m;
+  document.getElementById('iso-mode-compare').classList.toggle('active',m==='compare');
+  document.getElementById('iso-mode-find').classList.toggle('active',m==='find');
+  document.getElementById('iso-compare-section').style.display=m==='compare'?'block':'none';
+  document.getElementById('iso-result').innerHTML='';
+  document.getElementById('iso-error').textContent='';
+}
+
+function calcISOCompare() {
+  const err=document.getElementById('iso-error');
+  const out=document.getElementById('iso-result');
+  err.textContent=''; out.innerHTML='';
+
+  const d=parseFloat(document.getElementById('iso-nominal').value);
+  const tMin=parseFloat(document.getElementById('iso-intmin').value);
+  const tMax=parseFloat(document.getElementById('iso-intmax').value);
+
+  if(isNaN(d)||d<=0||d>500){err.textContent='Diâmetro inválido';return;}
+  if(isNaN(tMin)||isNaN(tMax)){err.textContent='Preencha a faixa de interferência/folga';return;}
+  if(tMin>tMax){err.textContent='Mínimo deve ser ≤ máximo';return;}
+
+  const best=findBestISO(d,tMin,tMax);
+
+  if(isoMode==='compare') {
+    const [hd,sd]=isoSelectedFit.split('/');
+    const hole=getHoleLimits(d,hd);
+    const shaft=getShaftLimits(d,sd);
+    if(!hole||!shaft){err.textContent='Ajuste ISO inválido';return;}
+    const f=calcFitResult(hole,shaft);
+
+    const ovMin=Math.max(f.minC,tMin), ovMax=Math.min(f.maxC,tMax);
+    const overlap=Math.max(0,ovMax-ovMin);
+    const compat=Math.round(overlap/Math.max(tMax-tMin,f.maxC-f.minC)*100);
+    const st=compatStatus(compat);
+
+    let html=`
+      <div class="card" style="border-color:#1565C0">
+        <div class="card-title" style="color:#1565C0">Padrão Interno vs ISO ${isoSelectedFit}</div>
+        <div class="compare-vs">
+          <div class="compare-col">
+            <div class="lbl">Padrão interno</div>
+            <div class="val">${tMin} μm</div>
+            <div class="val">${tMax} μm</div>
+            <div style="font-size:10px;color:#90A4AE">mín / máx</div>
+          </div>
+          <div class="vs-text">VS</div>
+          <div class="compare-col">
+            <div class="lbl">ISO ${isoSelectedFit}</div>
+            <div class="val">${f.minC.toFixed(0)} μm</div>
+            <div class="val">${f.maxC.toFixed(0)} μm</div>
+            <div style="font-size:10px;color:#90A4AE">mín / máx</div>
+          </div>
+        </div>
+        <div class="compat-bar-wrap">
+          <div class="compat-bar" style="width:${compat}%;background:${st.color}"></div>
+        </div>
+        <div style="font-size:14px;font-weight:700;color:${st.color};text-align:center">${st.label} — ${compat}%</div>
+      </div>
+
+      <div class="card" style="border-color:#6A1B9A">
+        <div class="card-title" style="color:#6A1B9A">Detalhes — ${isoSelectedFit}</div>
+        <p style="font-size:12px;color:#78909C;margin-bottom:8px">${COMMON_FITS[isoSelectedFit]?.desc||''}</p>
+        <div class="result-grid">
+          <div class="res-cell">
+            <div class="lbl">Furo ${hd}</div>
+            <div class="val" style="font-size:13px">${fmtD(d,hole.EI)} / ${fmtD(d,hole.ES)}</div>
+            <div class="sub-val">${fmtDev(hole.EI)} / ${fmtDev(hole.ES)}</div>
+          </div>
+          <div class="res-cell">
+            <div class="lbl">Eixo ${sd}</div>
+            <div class="val" style="font-size:13px">${fmtD(d,shaft.ei)} / ${fmtD(d,shaft.es)}</div>
+            <div class="sub-val">${fmtDev(shaft.ei)} / ${fmtDev(shaft.es)}</div>
+          </div>
+        </div>
+      </div>
+
+      <div class="section-label">Melhores equivalentes ISO</div>`;
+
+    best.forEach((alt,i)=>{
+      const s=compatStatus(alt.compat);
+      html+=`
+        <div class="card" style="border-color:${s.color}">
+          <div style="display:flex;align-items:flex-start;gap:10px">
+            <div style="flex:1">
+              <div style="font-size:16px;font-weight:800">${i+1}. ${alt.fitName}</div>
+              <div style="font-size:12px;color:#78909C;margin-top:2px">${COMMON_FITS[alt.fitName]?.desc||''}</div>
+              <div style="font-size:12px;color:#546E7A;margin-top:2px">ISO: ${alt.iMin.toFixed(0)} a ${alt.iMax.toFixed(0)} μm</div>
+            </div>
+            <div style="background:${s.color};border-radius:50%;width:52px;height:52px;display:flex;align-items:center;justify-content:center;flex-shrink:0">
+              <span style="color:#fff;font-size:14px;font-weight:800">${alt.compat}%</span>
+            </div>
+          </div>
+          <div style="font-size:12px;font-weight:600;color:${s.color};margin-top:8px">${s.label}</div>
+        </div>`;
+    });
+
+    html+=`<button class="btn btn-green" onclick="saveEntry({mode:'NORMA ISO — COMPARAÇÃO',nominal:${d},customRange:'${tMin} a ${tMax} μm',isoFitCompared:'${isoSelectedFit}',isoCompatibility:'${compat}%',bestISOFit:'${best[0]?.fitName||'-'}',bestCompatibility:'${best[0]?.compat||0}%'})">💾 SALVAR NO HISTÓRICO</button>`;
+    out.innerHTML=html;
+
+  } else {
+    let html=`<div class="card" style="border-color:#1565C0">
+      <div class="card-title" style="color:#1565C0">Melhores ajustes ISO equivalentes</div>
+      <p style="font-size:13px;color:#546E7A">Ø${d} mm &nbsp;|&nbsp; Faixa: ${tMin} a ${tMax} μm</p>
+    </div>`;
+
+    best.forEach((alt,i)=>{
+      const s=compatStatus(alt.compat);
+      const color=alt.f.isClearance?'#1565C0':alt.f.isInterference?'#B71C1C':'#E65100';
+      html+=`
+        <div class="card" style="border-color:${s.color}">
+          <div style="display:flex;align-items:flex-start;gap:10px">
+            <div style="flex:1">
+              <div style="font-size:16px;font-weight:800">${i+1}. ${alt.fitName}</div>
+              <span class="badge" style="background:${color}">${alt.f.type}</span>
+              <div style="font-size:12px;color:#78909C;margin-top:4px">${COMMON_FITS[alt.fitName]?.desc||''}</div>
+              <div style="font-size:12px;color:#546E7A;margin-top:2px">ISO: ${alt.iMin.toFixed(0)} a ${alt.iMax.toFixed(0)} μm</div>
+              <div style="font-size:12px;color:#90A4AE;margin-top:4px">
+                Furo: ${fmtD(d,alt.hole.EI)} / ${fmtD(d,alt.hole.ES)} mm<br>
+                Eixo: ${fmtD(d,alt.shaft.ei)} / ${fmtD(d,alt.shaft.es)} mm
+              </div>
+            </div>
+            <div style="background:${s.color};border-radius:50%;width:52px;height:52px;display:flex;align-items:center;justify-content:center;flex-shrink:0">
+              <span style="color:#fff;font-size:14px;font-weight:800">${alt.compat}%</span>
+            </div>
+          </div>
+          <div style="font-size:12px;font-weight:600;color:${s.color};margin-top:8px">${s.label}</div>
+        </div>`;
+    });
+
+    html+=`<button class="btn btn-green" onclick="saveEntry({mode:'NORMA ISO — COMPARAÇÃO',nominal:${d},customRange:'${tMin} a ${tMax} μm',bestISOFit:'${best[0]?.fitName||'-'}',bestCompatibility:'${best[0]?.compat||0}%'})">💾 SALVAR NO HISTÓRICO</button>`;
+    out.innerHTML=html;
+  }
+}
+
+const MODE_COLORS={
+  'CÁLCULO ISO':'#1565C0',
+  'VERIFICAÇÃO':'#2E7D32',
+  'SELEÇÃO POR APLICAÇÃO':'#E65100',
+  'NORMA ISO — COMPARAÇÃO':'#6A1B9A',
+};
+
+function loadHistory() {
+  try { return JSON.parse(localStorage.getItem('iso_history')||'[]'); } catch(e){return [];}
+}
+function saveHistory(h) { localStorage.setItem('iso_history',JSON.stringify(h)); }
+
+function saveEntry(entry) {
+  const h=loadHistory();
+  const newEntry={id:Date.now().toString(), timestamp:new Date().toISOString(), ...entry};
+  h.unshift(newEntry);
+  saveHistory(h.slice(0,100));
+  alert('Salvo no histórico!');
+}
+
+function renderHistory() {
+  const h=loadHistory();
+  document.getElementById('hist-count').textContent=`${h.length} registro${h.length!==1?'s':''}`;
+  const list=document.getElementById('hist-list');
+  if(!h.length){ list.innerHTML='<div style="text-align:center;padding:40px;color:#90A4AE"><div style="font-size:48px;margin-bottom:12px">📋</div><div style="font-size:16px;font-weight:700">Histórico vazio</div></div>'; return; }
+
+  list.innerHTML=h.map(e=>{
+    const color=MODE_COLORS[e.mode]||'#546E7A';
+    const date=new Date(e.timestamp);
+    const ds=`${date.toLocaleDateString('pt-BR')} ${date.toLocaleTimeString('pt-BR',{hour:'2-digit',minute:'2-digit'})}`;
+    const details=Object.entries(e)
+      .filter(([k])=>!['id','timestamp','mode'].includes(k))
+      .map(([k,v])=>`<div class="hist-detail"><strong>${k}:</strong> ${v}</div>`)
+      .join('');
+    return `<div class="hist-item" style="border-color:${color}">
+      <div class="hist-header">
+        <span class="badge" style="background:${color}">${e.mode}</span>
+        <span style="font-size:11px;color:#90A4AE">${ds}</span>
+      </div>
+      ${details}
+      <button class="hist-del" onclick="deleteEntry('${e.id}')">Excluir</button>
+    </div>`;
+  }).join('');
+}
+
+function deleteEntry(id) {
+  const h=loadHistory().filter(e=>e.id!==id);
+  saveHistory(h);
+  renderHistory();
+}
+
+function clearAll() {
+  if(!confirm('Apagar todo o histórico?')) return;
+  localStorage.removeItem('iso_history');
+  renderHistory();
+}
+</script>
+</body>
+</html>
